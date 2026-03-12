@@ -13,8 +13,8 @@ CENSO_CSV = BASE_DIR / "Data/AGEB/conjunto_de_datos_ageb_urbana_09_cpv2020.csv"
 AGEB_SHP = BASE_DIR / "Data/shape/AGEB_urb_2010_5.shp"
 CP_SHP = BASE_DIR / "Data/shape_cp/CP_09CDMX_v7.shp"
 
-@st.cache_data
-def run_pipeline_cached():
+@st.cache_data(show_spinner="Procesando datos geoespaciales...", ttl=None)
+def run_pipeline_cached(version="1"):
     pipeline = GeoDataPipeline(
         CENSO_CSV,
         AGEB_SHP,
@@ -22,21 +22,24 @@ def run_pipeline_cached():
     )
     return pipeline.run_pipeline()
 
-ageb_cp_fast, cp_geojson = run_pipeline_cached()
+ageb_cp_fast, cp_geojson = run_pipeline_cached("1")
 show_header("Mi primera GUI en Streamlit")
-
-st.write(ageb_cp_fast.head())
 
 
 # gráfico de barras
-#bar_chart = BarChartGenerator(ageb_cp_fast)
-#fig_bar = bar_chart.create_chart("P_60YMAS")
+bar_chart = BarChartGenerator(ageb_cp_fast)
+fig_bar = bar_chart.create_chart("P_60YMAS")
 
 
 # mapa
-#map_chart = ChoroplethMapGenerator(ageb_cp_fast, cp_geojson)
-#fig_map = map_chart.create_map("P_60YMAS")
+map_chart = ChoroplethMapGenerator(ageb_cp_fast, cp_geojson)
+fig_map = map_chart.create_map("P_60YMAS")
 
 
-#fig_bar.show()
-#fig_map.show()
+col1, col2 = st.columns(2)
+
+with col1:
+    st.plotly_chart(fig_bar, use_container_width=True)
+
+with col2:
+    st.plotly_chart(fig_map, use_container_width=True)
