@@ -25,6 +25,9 @@ def run_pipeline_cached():
     return pipeline.run_pipeline()
 
 ageb_cp_fast, cp_geojson = run_pipeline_cached()
+show_header("Mi primera GUI en Streamlit")
+
+print(ageb_cp_fast.head())
 
 #pipeline = GeoDataPipeline(
 #    CENSO_CSV,
@@ -34,7 +37,7 @@ ageb_cp_fast, cp_geojson = run_pipeline_cached()
 
 #ageb_cp_fast, cp_geojson = pipeline.run_pipeline()
 
-show_header("Mi primera GUI en Streamlit")
+
 #print(ageb_cp_fast)
 
 # gráfico de barras
