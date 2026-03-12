@@ -25,9 +25,9 @@ class GeoDataPipeline:
 
         self.censo = pd.read_csv(self.censo_path, low_memory=False)
 
-        self.ageb = gpd.read_file(self.ageb_path).to_crs(epsg=4326)
+        self.ageb = gpd.read_file(self.ageb_path,engine="pyogrio").to_crs(epsg=4326)
 
-        self.cp = gpd.read_file(self.cp_path).to_crs(epsg=4326)
+        self.cp = gpd.read_file(self.cp_path,engine="pyogrio").to_crs(epsg=4326)
 
 
     # 2. Crear CVEGEO
