@@ -20,8 +20,8 @@ CP_SHP = BASE_DIR / "Data/shape_cp/CP_09CDMX_v7.shp"
 #)
 
 #ageb_cp_fast, cp_geojson = pipeline.run_pipeline()
-#st.set_page_config(layout="wide")
-#show_header("Mi primera GUI en Streamlit")
+st.set_page_config(layout="wide")
+show_header("Mi primera GUI en Streamlit")
 #print(ageb_cp_fast)
 
 # gráfico de barras
