@@ -3,7 +3,6 @@ numpy
 matplotlib
 seaborn
 plotly
-geopandas
 json
 numpy
 pathlib
