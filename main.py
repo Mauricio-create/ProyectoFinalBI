@@ -6,11 +6,11 @@ from pathlib import Path
 import streamlit as st
 
 
-#BASE_DIR = Path(__file__).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent
 
-#CENSO_CSV = BASE_DIR / "Data/AGEB/conjunto_de_datos_ageb_urbana_09_cpv2020.csv"
-#AGEB_SHP = BASE_DIR / "Data/shape/AGEB_urb_2010_5.shp"
-#CP_SHP = BASE_DIR / "Data/shape_cp/CP_09CDMX_v7.shp"
+CENSO_CSV = BASE_DIR / "Data/AGEB/conjunto_de_datos_ageb_urbana_09_cpv2020.csv"
+AGEB_SHP = BASE_DIR / "Data/shape/AGEB_urb_2010_5.shp"
+CP_SHP = BASE_DIR / "Data/shape_cp/CP_09CDMX_v7.shp"
 
 
 #pipeline = GeoDataPipeline(
