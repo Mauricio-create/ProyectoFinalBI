@@ -1,4 +1,3 @@
 numpy
 pandas
-json
-geopandas
+geopandas>=0.14
