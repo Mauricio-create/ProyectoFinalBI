@@ -1,11 +1,11 @@
-from Modules.geodata_pipeline import GeoDataPipeline
+#from Modules.geodata_pipeline import GeoDataPipeline
 from Modules.bar_chart import BarChartGenerator
 from Modules.choropleth_map import ChoroplethMapGenerator
 from Modules.header import show_header
 from pathlib import Path
 import streamlit as st
 
-
+"""
 BASE_DIR = Path(__file__).resolve().parent
 
 CENSO_CSV = BASE_DIR / "Data/AGEB/conjunto_de_datos_ageb_urbana_09_cpv2020.csv"
@@ -34,7 +34,7 @@ fig_map = map_chart.create_map("P_60YMAS")
 
 fig_bar.show()
 fig_map.show()
-
+"""
 
 st.set_page_config(layout="wide")
 
