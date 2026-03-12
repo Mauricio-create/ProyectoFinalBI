@@ -1,5 +1,5 @@
 #from Modules.geodata_pipeline import GeoDataPipeline
-f#rom Modules.bar_chart import BarChartGenerator
+#from Modules.bar_chart import BarChartGenerator
 #from Modules.choropleth_map import ChoroplethMapGenerator
 from Modules.header import show_header
 from pathlib import Path
