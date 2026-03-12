@@ -19,7 +19,7 @@ pipeline = GeoDataPipeline(
     CP_SHP
 )
 
-ageb_cp_fast, cp_geojson = pipeline.run_pipeline()
+#ageb_cp_fast, cp_geojson = pipeline.run_pipeline()
 st.set_page_config(layout="wide")
 show_header("Mi primera GUI en Streamlit")
 #print(ageb_cp_fast)
