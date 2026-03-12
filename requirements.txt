@@ -4,6 +4,5 @@ matplotlib
 seaborn
 plotly
 geopandas
-fiona
 json
 numpy
