@@ -13,11 +13,11 @@ AGEB_SHP = BASE_DIR / "Data/shape/AGEB_urb_2010_5.shp"
 CP_SHP = BASE_DIR / "Data/shape_cp/CP_09CDMX_v7.shp"
 
 
-#pipeline = GeoDataPipeline(
-#    CENSO_CSV,
-#   AGEB_SHP,
-#    CP_SHP
-#)
+pipeline = GeoDataPipeline(
+    CENSO_CSV,
+   AGEB_SHP,
+    CP_SHP
+)
 
 #ageb_cp_fast, cp_geojson = pipeline.run_pipeline()
 st.set_page_config(layout="wide")
