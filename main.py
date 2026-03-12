@@ -13,8 +13,6 @@ CENSO_CSV = BASE_DIR / "Data/AGEB/conjunto_de_datos_ageb_urbana_09_cpv2020.csv"
 AGEB_SHP = BASE_DIR / "Data/shape/AGEB_urb_2010_5.shp"
 CP_SHP = BASE_DIR / "Data/shape_cp/CP_09CDMX_v7.shp"
 
-st.set_page_config(layout="wide")
-
 @st.cache_data
 def run_pipeline_cached():
     pipeline = GeoDataPipeline(
