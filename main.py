@@ -22,16 +22,17 @@ pipeline = GeoDataPipeline(
 ageb_cp_fast, cp_geojson = pipeline.run_pipeline()
 st.set_page_config(layout="wide")
 show_header("Mi primera GUI en Streamlit")
+print(ageb_cp_fast)
 
 # gráfico de barras
-bar_chart = BarChartGenerator(ageb_cp_fast)
-fig_bar = bar_chart.create_chart("P_60YMAS")
+#bar_chart = BarChartGenerator(ageb_cp_fast)
+#fig_bar = bar_chart.create_chart("P_60YMAS")
 
 
 # mapa
-map_chart = ChoroplethMapGenerator(ageb_cp_fast, cp_geojson)
-fig_map = map_chart.create_map("P_60YMAS")
+#map_chart = ChoroplethMapGenerator(ageb_cp_fast, cp_geojson)
+#fig_map = map_chart.create_map("P_60YMAS")
 
 
-fig_bar.show()
-fig_map.show()
+#fig_bar.show()
+#fig_map.show()
