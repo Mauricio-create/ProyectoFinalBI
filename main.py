@@ -32,8 +32,8 @@ fig_bar = bar_chart.create_chart("P_60YMAS")
 
 
 # mapa
-map_chart = ChoroplethMapGenerator(ageb_cp_fast, cp_geojson)
-fig_map = map_chart.create_map("P_60YMAS")
+#map_chart = ChoroplethMapGenerator(ageb_cp_fast, cp_geojson)
+#fig_map = map_chart.create_map("P_60YMAS")
 
 
 col1, col2 = st.columns(2)
@@ -41,5 +41,5 @@ col1, col2 = st.columns(2)
 with col1:
     st.plotly_chart(fig_bar, use_container_width=True)
 
-with col2:
-    st.plotly_chart(fig_map, use_container_width=True)
+#with col2:
+    #st.plotly_chart(fig_map, use_container_width=True)
