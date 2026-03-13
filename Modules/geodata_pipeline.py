@@ -22,17 +22,13 @@ class GeoDataPipeline:
 
     # 1. Carga de datos
     def load_data(self):
-
         self.censo = pd.read_csv(self.censo_path, low_memory=False)
-
-        self.ageb = gpd.read_file(self.ageb_path,engine="pyogrio").to_crs(epsg=4326)
-
-        self.cp = gpd.read_file(self.cp_path,engine="pyogrio").to_crs(epsg=4326)
+        self.ageb = gpd.read_file(self.ageb_path, engine="pyogrio").to_crs(epsg=4326)
+        self.cp = gpd.read_file(self.cp_path, engine="pyogrio").to_crs(epsg=4326)
 
 
     # 2. Crear CVEGEO
     def build_cvegeo(self):
-
         self.censo["CVEGEO"] = (
             self.censo["ENTIDAD"].astype(str).str.zfill(2) +
             self.censo["MUN"].astype(str).str.zfill(3) +
@@ -43,53 +39,66 @@ class GeoDataPipeline:
 
     # 3. Merge Censo + AGEB
     def merge_census(self):
-
         self.ageb = self.ageb.merge(
             self.censo,
             on="CVEGEO",
             how="left"
         ).replace(["*", "N/D"], np.nan)
+        
+        # <-- CORRECCIÓN: Filtrar solo la CDMX (09)
+        self.ageb = self.ageb[self.ageb["CVEGEO"].str[:2] == "09"]
 
 
     # 4. Limpieza columnas
     def clean_columns(self):
-
         cols = ["POBTOT", "P_60YMAS", "VPH_PC", "VPH_INTER", "VPH_AUTOM"]
-
         for col in cols:
             self.ageb[col] = pd.to_numeric(self.ageb[col], errors="coerce")
 
 
     # 5. Preparar CP
     def prepare_cp(self):
-
-        self.cp = self.cp.rename(columns={"d_cp": "CP"})
-        self.cp["CP"] = self.cp["CP"].astype(str).str.zfill(5)
-
+        if "d_cp" in self.cp.columns:
+            self.cp = self.cp.rename(columns={"d_cp": "CP"})
+            
+        self.cp["CP"] = self.cp["CP"].astype(str).str.strip().str.zfill(5)
         self.cp_geojson = json.loads(self.cp.to_json())
+
+        # <-- CORRECCIÓN: Asegurar el formato del CP dentro del GeoJSON
+        for f in self.cp_geojson["features"]:
+            f["properties"]["CP"] = str(f["properties"]["CP"]).strip().zfill(5)
+
 
     # 6. Spatial Join
     def spatial_join(self):
+        # <-- CORRECCIÓN: Usar centroides como en Colab
+        ageb_points = self.ageb.copy()
+        ageb_points["geometry"] = self.ageb.geometry.centroid
 
         self.ageb_cp = gpd.sjoin(
-            self.ageb,
+            ageb_points,
             self.cp[["CP", "geometry"]],
             how="left",
-            predicate="intersects"
+            predicate="within" # <-- Cambiado de intersects a within
         )
+        
+        # <-- CORRECCIÓN: Eliminar los NAs y re-limpiar el CP
+        self.ageb_cp = self.ageb_cp[self.ageb_cp["CP"].notna()]
+        self.ageb_cp["CP"] = self.ageb_cp["CP"].astype(str).str.strip().str.zfill(5)
 
 
     # 7. Feature Engineering
     def create_features(self):
-
-        self.ageb_cp["INDICE_RIQUEZA"] = self.ageb_cp[
-            ["VPH_PC", "VPH_INTER", "VPH_AUTOM"]
-        ].sum(axis=1)
+        # <-- Mantenemos la lógica de suma directa como en Colab por si hay NaNs
+        self.ageb_cp["INDICE_RIQUEZA"] = (
+            self.ageb_cp["VPH_PC"] + 
+            self.ageb_cp["VPH_INTER"] + 
+            self.ageb_cp["VPH_AUTOM"]
+        )
 
  
     # 8. Pipeline completo
     def run_pipeline(self):
-
         self.load_data()
         self.build_cvegeo()
         self.merge_census()

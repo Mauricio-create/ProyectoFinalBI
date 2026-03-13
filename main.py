@@ -37,27 +37,88 @@ BASE_DIR = Path(__file__).resolve().parent
 
 AGEB = BASE_DIR / "Data/Processed/ageb_cp_fast.csv.gz"
 GEOJSON = BASE_DIR / "Data/Processed/cp_geojson.json"
-show_header("Mi primera GUI en Streamlit")
 
-ageb_cp_fast = pd.read_csv(AGEB)
-with open(GEOJSON) as f:
-    cp_geojson = json.load(f)
+show_header("Dashboard Inteligencia de Negocios CDMX")
+
+# 1. Cargar Datos
+# Tip: st.cache_data evita que el CSV y el JSON se lean cada vez que mueves un filtro
+@st.cache_data
+def load_data():
+    df = pd.read_csv(AGEB, low_memory=False)
+    # Aseguramos el formato del CP desde que entra
+    df["CP"] = df["CP"].astype(str).str.zfill(5) 
+    with open(GEOJSON) as f:
+        geojson = json.load(f)
+    return df, geojson
+
+ageb_cp_fast, cp_geojson = load_data()
 
 
-# gráfico de barras
-bar_chart = BarChartGenerator(ageb_cp_fast)
-fig_bar = bar_chart.create_chart("P_60YMAS")
+# =====================================
+# 2. BARRA LATERAL (SIDEBAR) PARA FILTROS
+# =====================================
+st.sidebar.header("Filtros del Dashboard")
+
+opciones_metrica = {
+    "Pob. 60+": "P_60YMAS",
+    "Riqueza": "INDICE_RIQUEZA",
+    "Autos": "VPH_AUTOM"
+}
+
+# Filtro 1: Métrica
+metrica_seleccionada = st.sidebar.selectbox(
+    "Selecciona la Métrica a analizar:", 
+    list(opciones_metrica.keys())
+)
+metrica_columna = opciones_metrica[metrica_seleccionada]
+
+# Filtro 2: Alcaldía
+lista_alcaldias = ["Todas"] + sorted(ageb_cp_fast["NOM_MUN"].dropna().unique().tolist())
+alcaldia_seleccionada = st.sidebar.selectbox("Selecciona Alcaldía:", lista_alcaldias)
+
+# Filtro 3: Código Postal (Se actualiza según la alcaldía seleccionada)
+if alcaldia_seleccionada != "Todas":
+    df_filtrado_alcaldia = ageb_cp_fast[ageb_cp_fast["NOM_MUN"] == alcaldia_seleccionada]
+else:
+    df_filtrado_alcaldia = ageb_cp_fast
+
+lista_cps = ["Todos"] + sorted(df_filtrado_alcaldia["CP"].unique().tolist())
+cp_seleccionado = st.sidebar.selectbox("Selecciona CP:", lista_cps)
+
+# Switch de Modo Oscuro para el mapa
+st.sidebar.markdown("---")
+modo_oscuro = st.sidebar.toggle("Mapa en Modo Oscuro", value=True)
 
 
-# mapa
-#map_chart = ChoroplethMapGenerator(ageb_cp_fast, cp_geojson)
-#fig_map = map_chart.create_map("P_60YMAS")
+# =====================================
+# 3. APLICAR FILTROS A LA DATA
+# =====================================
+df_final = df_filtrado_alcaldia.copy()
+
+if cp_seleccionado != "Todos":
+    df_final = df_final[df_final["CP"] == cp_seleccionado]
 
 
-col1, col2 = st.columns(2)
+# =====================================
+# 4. RENDERIZAR GRÁFICOS
+# =====================================
 
-with col1:
-    st.plotly_chart(fig_bar, use_container_width=True)
+# Validamos que los filtros no hayan dejado el DataFrame vacío
+if df_final.empty:
+    st.warning("⚠️ No hay datos para los filtros seleccionados. Intenta otra combinación.")
+else:
+    # Generar gráficos con la data filtrada
+    bar_chart = BarChartGenerator(df_final)
+    fig_bar = bar_chart.create_chart(metrica_columna) 
 
-#with col2:
-    #st.plotly_chart(fig_map, use_container_width=True)
+    map_chart = ChoroplethMapGenerator(df_final, cp_geojson)
+    fig_map = map_chart.create_map(metrica_columna, modo_oscuro=modo_oscuro)
+
+    # Mostrarlos en dos columnas
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.plotly_chart(fig_bar, use_container_width=True)
+
+    with col2:
+        st.plotly_chart(fig_map, use_container_width=True)

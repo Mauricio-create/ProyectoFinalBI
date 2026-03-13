@@ -1,13 +1,16 @@
 import plotly.express as px
 
-
 class ChoroplethMapGenerator:
 
     def __init__(self, df, geojson):
-        self.df = df
+        self.df = df.copy() # Usamos .copy() para no alterar el df original
         self.geojson = geojson
 
     def create_map(self, metrica, modo_oscuro=True):
+
+        # 1. CORRECCIÓN: Asegurar que el CP vuelva a ser string de 5 dígitos
+        # (Porque pd.read_csv() convierte "01000" en 1000 y rompe el cruce con el json)
+        self.df["CP"] = self.df["CP"].astype(str).str.zfill(5)
 
         df_map = self.df.groupby("CP").agg({
             metrica: "sum",
@@ -20,14 +23,10 @@ class ChoroplethMapGenerator:
             df_map[metrica] / df_map["POBTOT"]
         ) * 100
 
-        centroide_seguro = (
-            self.df.to_crs(epsg=3857)
-            .centroid
-            .to_crs(epsg=4326)
-        )
-
-        lat = centroide_seguro.y.mean()
-        lon = centroide_seguro.x.mean()
+        # 2. CORRECCIÓN: Como self.df viene de un CSV, ya no es un GeoDataFrame.
+        # Quitamos la lógica de .to_crs() y .centroid y usamos el centro fijo de la CDMX
+        lat = 19.4326
+        lon = -99.1332
 
         mapa = "carto-darkmatter" if modo_oscuro else "carto-positron"
 
@@ -44,6 +43,11 @@ class ChoroplethMapGenerator:
             color_continuous_scale="RdYlGn"
         )
 
-        fig.update_layout(margin={"r":0,"t":40,"l":0,"b":0})
+        # TIP EXTRA: Hacer el fondo transparente para que se funda bonito con Streamlit
+        fig.update_layout(
+            margin={"r":0,"t":40,"l":0,"b":0},
+            paper_bgcolor="rgba(0,0,0,0)", 
+            plot_bgcolor="rgba(0,0,0,0)"
+        )
 
         return fig
