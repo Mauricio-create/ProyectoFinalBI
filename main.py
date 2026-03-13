@@ -139,6 +139,9 @@ modo_oscuro = st.sidebar.toggle("Tema Oscuro del Tablero", value=True)
 # =====================================
 # INYECCIÓN DINÁMICA DE CSS (MAGIA PARA EL TEMA)
 # =====================================
+# =====================================
+# INYECCIÓN DINÁMICA DE CSS (MAGIA PARA EL TEMA)
+# =====================================
 if modo_oscuro:
     # Colores oscuros para el fondo y letras forzadas a blanco
     st.markdown("""
@@ -157,9 +160,14 @@ if modo_oscuro:
             color: #FAFAFA !important;
         }
         
-        /* Forzar texto blanco en los botones de la barra lateral (Limpiar Filtros) */
+        /* Botón de Limpiar Filtros (Siempre Oscuro) */
+        [data-testid="stSidebar"] button {
+            background-color: #0E1117 !important; /* Fondo negro */
+            color: #FAFAFA !important;            /* Letra blanca */
+            border: 1px solid #FAFAFA !important; /* Borde blanquito para que se vea */
+        }
         [data-testid="stSidebar"] button * {
-            color: #FAFAFA !important;
+            color: #FAFAFA !important; 
         }
         </style>
         """, unsafe_allow_html=True)
@@ -181,9 +189,14 @@ else:
             color: #262730 !important;
         }
         
-        /* Forzar texto negro en los botones de la barra lateral (Limpiar Filtros) */
+        /* Botón de Limpiar Filtros (Siempre Oscuro) */
+        [data-testid="stSidebar"] button {
+            background-color: #262730 !important; /* Fondo oscuro */
+            color: #FAFAFA !important;            /* Letra blanca */
+            border: none !important;              /* Sin borde en modo claro */
+        }
         [data-testid="stSidebar"] button * {
-            color: #262730 !important;
+            color: #FAFAFA !important; 
         }
         </style>
         """, unsafe_allow_html=True)
