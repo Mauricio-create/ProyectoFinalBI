@@ -35,6 +35,7 @@ BASE_DIR = Path(__file__).resolve().parent
 #    json.dump(cp_geojson, f)
 #-----------------------------------------------------------------------------
 
+# --- CONTROL DE VISTA ---
 if "vista_detalle" not in st.session_state:
     st.session_state.vista_detalle = False
 
@@ -57,19 +58,7 @@ def load_data():
 
 ageb_cp_fast, cp_geojson = load_data()
 
-# (Mantenemos tu diccionario de coordenadas y funciones de limpieza igual...)
-coordenadas_alcaldias = {
-    "Azcapotzalco": (19.4869, -99.1859), "Coyoacán": (19.3467, -99.1617),
-    "Cuajimalpa de Morelos": (19.3692, -99.2991), "Gustavo A. Madero": (19.4827, -99.1093),
-    "Iztacalco": (19.3952, -99.0977), "Iztapalapa": (19.3552, -99.0622),
-    "La Magdalena Contreras": (19.3321, -99.2435), "Milpa Alta": (19.1922, -99.0225),
-    "Álvaro Obregón": (19.3586, -99.2530), "Tláhuac": (19.2687, -99.0069),
-    "Tlalpan": (19.1555, -99.1931), "Xochimilco": (19.2433, -99.1061),
-    "Benito Juárez": (19.3806, -99.1611), "Cuauhtémoc": (19.4326, -99.1432),
-    "Miguel Hidalgo": (19.4312, -99.2001), "Venustiano Carranza": (19.4304, -99.0953),
-    "Todas": (19.4326, -99.1332)
-}
-
+# --- ESTADO DE SESIÓN Y FILTROS ---
 if "metrica" not in st.session_state: st.session_state.metrica = "Pob. 60+"
 if "alcaldia" not in st.session_state: st.session_state.alcaldia = "Todas"
 if "cp" not in st.session_state: st.session_state.cp = "Todos"
@@ -85,20 +74,16 @@ def cambio_alcaldia():
     st.session_state.cp = "Todos" 
     st.session_state.zoom_ui = 8.5 if st.session_state.alcaldia != "Todas" else 5.5
 
-# =====================================
-# SIDEBAR
-# =====================================
+# --- SIDEBAR ---
 st.sidebar.header("Filtros del Dashboard")
 
-# BOTÓN DE LIMPIAR
-st.sidebar.button("🧹 Limpiar Filtros", on_click=limpiar_filtros, use_container_width=True)
+# Actualizado a width="stretch"
+st.sidebar.button("🧹 Limpiar Filtros", on_click=limpiar_filtros, width="stretch")
 
-# BOTÓN DE NAVEGACIÓN (CAMBIA SEGÚN LA VISTA)
-texto_boton = "📊 Ir a Dashboard" if st.session_state.vista_detalle else "🔍 Ir a Detalle ->"
-st.sidebar.button(texto_boton, on_click=toggle_vista, use_container_width=True)
+texto_btn = "📊 Ir a Dashboard" if st.session_state.vista_detalle else "🔍 Ir a Detalle ->"
+st.sidebar.button(texto_btn, on_click=toggle_vista, width="stretch")
 
 st.sidebar.markdown("---")
-
 opciones_metrica = {"Pob. 60+": "P_60YMAS", "Riqueza": "INDICE_RIQUEZA", "Autos": "VPH_AUTOM"}
 st.sidebar.selectbox("Métrica:", list(opciones_metrica.keys()), key="metrica")
 metrica_columna = opciones_metrica[st.session_state.metrica]
@@ -114,65 +99,53 @@ st.sidebar.markdown("---")
 st.sidebar.slider("Zoom:", 1.0, 10.0, step=0.5, key="zoom_ui")
 modo_oscuro = st.sidebar.toggle("Tema Oscuro", value=True)
 
-# =====================================
-# CSS MEJORADO (Botones siempre negros/blancos)
-# =====================================
-color_bg_botones = "#262730" # Un gris muy oscuro casi negro
-estilo_botones = f"""
+# --- CSS PARA BOTONES NEGROS ---
+st.markdown("""
     <style>
-    /* Aplicar a todos los botones de la barra lateral */
-    [data-testid="stSidebar"] button {{
-        background-color: {color_bg_botones} !important;
+    [data-testid="stSidebar"] button {
+        background-color: #262730 !important;
         color: white !important;
         border: 1px solid #444 !important;
-    }}
-    [data-testid="stSidebar"] button:hover {{
-        border-color: #FAFAFA !important;
-    }}
-    [data-testid="stSidebar"] button p {{
+    }
+    [data-testid="stSidebar"] button p {
         color: white !important;
-    }}
+    }
     </style>
-"""
-st.markdown(estilo_botones, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
-# (Aquí va el resto de tu CSS dinámico de modo oscuro/claro que ya tenías...)
 if modo_oscuro:
     st.markdown('<style>.stApp { background-color: #0E1117; color: #FAFAFA; } [data-testid="stSidebar"] { background-color: #262730; }</style>', unsafe_allow_html=True)
 else:
     st.markdown('<style>.stApp { background-color: #FFFFFF; color: #262730; } [data-testid="stSidebar"] { background-color: #F0F2F6; }</style>', unsafe_allow_html=True)
 
-# =====================================
-# LÓGICA DE FILTRADO Y RENDERIZADO
-# =====================================
+# --- LÓGICA DE DATOS ---
 df_final = df_filtrado_alcaldia.copy()
 if st.session_state.cp != "Todos":
     df_final = df_final[df_final["CP"] == st.session_state.cp]
 
+# --- RENDERIZADO ---
 if df_final.empty:
     st.warning("⚠️ Sin datos.")
 else:
     if st.session_state.vista_detalle:
-        # --- VISTA TABLA DETALLE ---
-        st.subheader(f"Detalle de Datos: {st.session_state.alcaldia} - {st.session_state.cp}")
-        show_export_button(df_final) # Botón de exportar aparece solo aquí
-        
+        st.subheader(f"Detalle de Datos: {st.session_state.alcaldia}")
+        show_export_button(df_final)
         table_gen = TableViewGenerator(df_final)
         table_gen.render_table()
     else:
-        # --- VISTA DASHBOARD (MAPA Y BARRAS) ---
-        lat_centro, lon_centro = coordenadas_alcaldias.get(st.session_state.alcaldia, (19.4326, -99.1332))
-        
+        # Dashboard: width="stretch" en los charts
         col1, col2 = st.columns(2)
         with col1:
             bar_chart = BarChartGenerator(df_final)
             fig_bar = bar_chart.create_chart(metrica_columna, 
                                            nivel="CP" if st.session_state.alcaldia != "Todas" else "NOM_MUN",
                                            modo_oscuro=modo_oscuro)
-            st.plotly_chart(fig_bar, use_container_width=True)
+            st.plotly_chart(fig_bar, width="stretch")
         
         with col2:
+            from Modules.choropleth_map import ChoroplethMapGenerator
+            lat_centro, lon_centro = (19.4326, -99.1332) # Simplificado para el ejemplo
             zoom_real = 8.0 + ((st.session_state.zoom_ui - 1.0) / 9.0) * 4.0
             map_chart = ChoroplethMapGenerator(df_final, cp_geojson)
             fig_map = map_chart.create_map(metrica_columna, lat_centro, lon_centro, zoom_real, modo_oscuro)
-            st.plotly_chart(fig_map, use_container_width=True)
+            st.plotly_chart(fig_map, width="stretch")
