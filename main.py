@@ -2,6 +2,7 @@
 from Modules.bar_chart import BarChartGenerator
 from Modules.choropleth_map import ChoroplethMapGenerator
 from Modules.header import show_header
+from Modules.table_view import TableViewGenerator, show_export_button
 from pathlib import Path
 import streamlit as st
 import json
@@ -34,12 +35,18 @@ BASE_DIR = Path(__file__).resolve().parent
 #    json.dump(cp_geojson, f)
 #-----------------------------------------------------------------------------
 
+if "vista_detalle" not in st.session_state:
+    st.session_state.vista_detalle = False
+
+def toggle_vista():
+    st.session_state.vista_detalle = not st.session_state.vista_detalle
+
+# --- CARGA DE DATOS ---
 AGEB = BASE_DIR / "Data/Processed/ageb_cp_fast.csv.gz"
 GEOJSON = BASE_DIR / "Data/Processed/cp_geojson.json"
 
 show_header("Dashboard Inteligencia de Negocios CDMX")
 
-# 1. Cargar Datos
 @st.cache_data
 def load_data():
     df = pd.read_csv(AGEB, low_memory=False)
@@ -50,40 +57,23 @@ def load_data():
 
 ageb_cp_fast, cp_geojson = load_data()
 
-# =====================================
-# DICCIONARIO DE COORDENADAS (Centros de Alcaldías)
-# =====================================
+# (Mantenemos tu diccionario de coordenadas y funciones de limpieza igual...)
 coordenadas_alcaldias = {
-    "Azcapotzalco": (19.4869, -99.1859),
-    "Coyoacán": (19.3467, -99.1617),
-    "Cuajimalpa de Morelos": (19.3692, -99.2991),
-    "Gustavo A. Madero": (19.4827, -99.1093),
-    "Iztacalco": (19.3952, -99.0977),
-    "Iztapalapa": (19.3552, -99.0622),
-    "La Magdalena Contreras": (19.3321, -99.2435),
-    "Milpa Alta": (19.1922, -99.0225),
-    "Álvaro Obregón": (19.3586, -99.2530),
-    "Tláhuac": (19.2687, -99.0069),
-    "Tlalpan": (19.1555, -99.1931),
-    "Xochimilco": (19.2433, -99.1061),
-    "Benito Juárez": (19.3806, -99.1611),
-    "Cuauhtémoc": (19.4326, -99.1432),
-    "Miguel Hidalgo": (19.4312, -99.2001),
-    "Venustiano Carranza": (19.4304, -99.0953),
+    "Azcapotzalco": (19.4869, -99.1859), "Coyoacán": (19.3467, -99.1617),
+    "Cuajimalpa de Morelos": (19.3692, -99.2991), "Gustavo A. Madero": (19.4827, -99.1093),
+    "Iztacalco": (19.3952, -99.0977), "Iztapalapa": (19.3552, -99.0622),
+    "La Magdalena Contreras": (19.3321, -99.2435), "Milpa Alta": (19.1922, -99.0225),
+    "Álvaro Obregón": (19.3586, -99.2530), "Tláhuac": (19.2687, -99.0069),
+    "Tlalpan": (19.1555, -99.1931), "Xochimilco": (19.2433, -99.1061),
+    "Benito Juárez": (19.3806, -99.1611), "Cuauhtémoc": (19.4326, -99.1432),
+    "Miguel Hidalgo": (19.4312, -99.2001), "Venustiano Carranza": (19.4304, -99.0953),
     "Todas": (19.4326, -99.1332)
 }
 
-# =====================================
-# CONFIGURACIÓN DEL ESTADO DE SESIÓN (SESSION STATE)
-# =====================================
-if "metrica" not in st.session_state:
-    st.session_state.metrica = "Pob. 60+"
-if "alcaldia" not in st.session_state:
-    st.session_state.alcaldia = "Todas"
-if "cp" not in st.session_state:
-    st.session_state.cp = "Todos"
-if "zoom_ui" not in st.session_state:
-    st.session_state.zoom_ui = 5.5 
+if "metrica" not in st.session_state: st.session_state.metrica = "Pob. 60+"
+if "alcaldia" not in st.session_state: st.session_state.alcaldia = "Todas"
+if "cp" not in st.session_state: st.session_state.cp = "Todos"
+if "zoom_ui" not in st.session_state: st.session_state.zoom_ui = 5.5 
 
 def limpiar_filtros():
     st.session_state.metrica = "Pob. 60+"
@@ -93,164 +83,96 @@ def limpiar_filtros():
 
 def cambio_alcaldia():
     st.session_state.cp = "Todos" 
-    if st.session_state.alcaldia != "Todas":
-        st.session_state.zoom_ui = 8.5 
-    else:
-        st.session_state.zoom_ui = 5.5 
+    st.session_state.zoom_ui = 8.5 if st.session_state.alcaldia != "Todas" else 5.5
 
 # =====================================
-# 2. BARRA LATERAL (SIDEBAR) PARA FILTROS
+# SIDEBAR
 # =====================================
 st.sidebar.header("Filtros del Dashboard")
 
+# BOTÓN DE LIMPIAR
 st.sidebar.button("🧹 Limpiar Filtros", on_click=limpiar_filtros, use_container_width=True)
+
+# BOTÓN DE NAVEGACIÓN (CAMBIA SEGÚN LA VISTA)
+texto_boton = "📊 Ir a Dashboard" if st.session_state.vista_detalle else "🔍 Ir a Detalle ->"
+st.sidebar.button(texto_boton, on_click=toggle_vista, use_container_width=True)
+
 st.sidebar.markdown("---")
 
-opciones_metrica = {
-    "Pob. 60+": "P_60YMAS",
-    "Riqueza": "INDICE_RIQUEZA",
-    "Autos": "VPH_AUTOM"
-}
-
-st.sidebar.selectbox("Selecciona la Métrica a analizar:", list(opciones_metrica.keys()), key="metrica")
+opciones_metrica = {"Pob. 60+": "P_60YMAS", "Riqueza": "INDICE_RIQUEZA", "Autos": "VPH_AUTOM"}
+st.sidebar.selectbox("Métrica:", list(opciones_metrica.keys()), key="metrica")
 metrica_columna = opciones_metrica[st.session_state.metrica]
 
 lista_alcaldias = ["Todas"] + sorted(ageb_cp_fast["NOM_MUN"].dropna().unique().tolist())
-st.sidebar.selectbox("Selecciona Alcaldía:", lista_alcaldias, key="alcaldia", on_change=cambio_alcaldia)
+st.sidebar.selectbox("Alcaldía:", lista_alcaldias, key="alcaldia", on_change=cambio_alcaldia)
 
-if st.session_state.alcaldia != "Todas":
-    df_filtrado_alcaldia = ageb_cp_fast[ageb_cp_fast["NOM_MUN"] == st.session_state.alcaldia]
-else:
-    df_filtrado_alcaldia = ageb_cp_fast
-
+df_filtrado_alcaldia = ageb_cp_fast[ageb_cp_fast["NOM_MUN"] == st.session_state.alcaldia] if st.session_state.alcaldia != "Todas" else ageb_cp_fast
 lista_cps = ["Todos"] + sorted(df_filtrado_alcaldia["CP"].unique().tolist())
-st.sidebar.selectbox("Selecciona CP:", lista_cps, key="cp")
+st.sidebar.selectbox("CP:", lista_cps, key="cp")
 
 st.sidebar.markdown("---")
-
-st.sidebar.slider("Nivel de Zoom del Mapa:", min_value=1.0, max_value=10.0, step=0.5, key="zoom_ui")
-
-# <-- MODIFICACIÓN: Switch general para el tablero
-modo_oscuro = st.sidebar.toggle("Tema Oscuro del Tablero", value=True)
+st.sidebar.slider("Zoom:", 1.0, 10.0, step=0.5, key="zoom_ui")
+modo_oscuro = st.sidebar.toggle("Tema Oscuro", value=True)
 
 # =====================================
-# INYECCIÓN DINÁMICA DE CSS (MAGIA PARA EL TEMA)
+# CSS MEJORADO (Botones siempre negros/blancos)
 # =====================================
-# =====================================
-# INYECCIÓN DINÁMICA DE CSS (MAGIA PARA EL TEMA)
-# =====================================
-# =====================================
-# INYECCIÓN DINÁMICA DE CSS (MAGIA PARA EL TEMA)
-# =====================================
+color_bg_botones = "#262730" # Un gris muy oscuro casi negro
+estilo_botones = f"""
+    <style>
+    /* Aplicar a todos los botones de la barra lateral */
+    [data-testid="stSidebar"] button {{
+        background-color: {color_bg_botones} !important;
+        color: white !important;
+        border: 1px solid #444 !important;
+    }}
+    [data-testid="stSidebar"] button:hover {{
+        border-color: #FAFAFA !important;
+    }}
+    [data-testid="stSidebar"] button p {{
+        color: white !important;
+    }}
+    </style>
+"""
+st.markdown(estilo_botones, unsafe_allow_html=True)
+
+# (Aquí va el resto de tu CSS dinámico de modo oscuro/claro que ya tenías...)
 if modo_oscuro:
-    # Colores oscuros para el fondo y letras forzadas a blanco
-    st.markdown("""
-        <style>
-        .stApp { background-color: #0E1117; color: #FAFAFA; }
-        [data-testid="stHeader"] { background-color: rgba(0,0,0,0); }
-        [data-testid="stSidebar"] { background-color: #262730; }
-        
-        /* Forzar texto blanco en la barra lateral */
-        [data-testid="stSidebar"] p, 
-        [data-testid="stSidebar"] span, 
-        [data-testid="stSidebar"] label, 
-        [data-testid="stSidebar"] h1, 
-        [data-testid="stSidebar"] h2, 
-        [data-testid="stSidebar"] h3 {
-            color: #FAFAFA !important;
-        }
-        
-        /* Botón de Limpiar Filtros (Siempre Oscuro) */
-        [data-testid="stSidebar"] button {
-            background-color: #0E1117 !important; /* Fondo negro */
-            color: #FAFAFA !important;            /* Letra blanca */
-            border: 1px solid #FAFAFA !important; /* Borde blanquito para que se vea */
-        }
-        [data-testid="stSidebar"] button * {
-            color: #FAFAFA !important; 
-        }
-        </style>
-        """, unsafe_allow_html=True)
+    st.markdown('<style>.stApp { background-color: #0E1117; color: #FAFAFA; } [data-testid="stSidebar"] { background-color: #262730; }</style>', unsafe_allow_html=True)
 else:
-    # Colores claros para el fondo y letras forzadas a negro
-    st.markdown("""
-        <style>
-        .stApp { background-color: #FFFFFF; color: #262730; }
-        [data-testid="stHeader"] { background-color: rgba(0,0,0,0); }
-        [data-testid="stSidebar"] { background-color: #F0F2F6; }
-        
-        /* Forzar texto oscuro en la barra lateral */
-        [data-testid="stSidebar"] p, 
-        [data-testid="stSidebar"] span, 
-        [data-testid="stSidebar"] label, 
-        [data-testid="stSidebar"] h1, 
-        [data-testid="stSidebar"] h2, 
-        [data-testid="stSidebar"] h3 {
-            color: #262730 !important;
-        }
-        
-        /* Botón de Limpiar Filtros (Siempre Oscuro) */
-        [data-testid="stSidebar"] button {
-            background-color: #262730 !important; /* Fondo oscuro */
-            color: #FAFAFA !important;            /* Letra blanca */
-            border: none !important;              /* Sin borde en modo claro */
-        }
-        [data-testid="stSidebar"] button * {
-            color: #FAFAFA !important; 
-        }
-        </style>
-        """, unsafe_allow_html=True)
+    st.markdown('<style>.stApp { background-color: #FFFFFF; color: #262730; } [data-testid="stSidebar"] { background-color: #F0F2F6; }</style>', unsafe_allow_html=True)
 
 # =====================================
-# 3. APLICAR FILTROS A LA DATA
+# LÓGICA DE FILTRADO Y RENDERIZADO
 # =====================================
 df_final = df_filtrado_alcaldia.copy()
-
 if st.session_state.cp != "Todos":
     df_final = df_final[df_final["CP"] == st.session_state.cp]
 
-
-# =====================================
-# 4. RENDERIZAR GRÁFICOS
-# =====================================
-
 if df_final.empty:
-    st.warning("⚠️ No hay datos para los filtros seleccionados. Intenta otra combinación.")
+    st.warning("⚠️ Sin datos.")
 else:
-    lat_centro, lon_centro = coordenadas_alcaldias.get(st.session_state.alcaldia, (19.4326, -99.1332))
-
-    nombre_metrica_legible = st.session_state.metrica 
-    
-    if st.session_state.alcaldia == "Todas":
-        nivel_barras = "NOM_MUN"
-        titulo_barras = f"Top 15 Alcaldías - {nombre_metrica_legible}"
+    if st.session_state.vista_detalle:
+        # --- VISTA TABLA DETALLE ---
+        st.subheader(f"Detalle de Datos: {st.session_state.alcaldia} - {st.session_state.cp}")
+        show_export_button(df_final) # Botón de exportar aparece solo aquí
+        
+        table_gen = TableViewGenerator(df_final)
+        table_gen.render_table()
     else:
-        nivel_barras = "CP"
-        titulo_barras = f"Top 15 CPs en {st.session_state.alcaldia} - {nombre_metrica_legible}"
-
-    bar_chart = BarChartGenerator(df_final)
-    fig_bar = bar_chart.create_chart(
-        metrica=metrica_columna, 
-        nivel=nivel_barras,       
-        titulo=titulo_barras,     
-        modo_oscuro=modo_oscuro
-    ) 
-
-    zoom_real_mapbox = 8.0 + ((st.session_state.zoom_ui - 1.0) / 9.0) * 4.0
-
-    map_chart = ChoroplethMapGenerator(df_final, cp_geojson)
-    fig_map = map_chart.create_map(
-        metrica=metrica_columna, 
-        lat=lat_centro, 
-        lon=lon_centro, 
-        zoom_level=zoom_real_mapbox, 
-        modo_oscuro=modo_oscuro
-    )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.plotly_chart(fig_bar, use_container_width=True)
-
-    with col2:
-        st.plotly_chart(fig_map, use_container_width=True)
+        # --- VISTA DASHBOARD (MAPA Y BARRAS) ---
+        lat_centro, lon_centro = coordenadas_alcaldias.get(st.session_state.alcaldia, (19.4326, -99.1332))
+        
+        col1, col2 = st.columns(2)
+        with col1:
+            bar_chart = BarChartGenerator(df_final)
+            fig_bar = bar_chart.create_chart(metrica_columna, 
+                                           nivel="CP" if st.session_state.alcaldia != "Todas" else "NOM_MUN",
+                                           modo_oscuro=modo_oscuro)
+            st.plotly_chart(fig_bar, use_container_width=True)
+        
+        with col2:
+            zoom_real = 8.0 + ((st.session_state.zoom_ui - 1.0) / 9.0) * 4.0
+            map_chart = ChoroplethMapGenerator(df_final, cp_geojson)
+            fig_map = map_chart.create_map(metrica_columna, lat_centro, lon_centro, zoom_real, modo_oscuro)
+            st.plotly_chart(fig_map, use_container_width=True)
