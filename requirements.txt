@@ -1,6 +1,5 @@
 numpy
 pandas
-geopandas>=0.14
 plotly
 rtree
 pyogrio
