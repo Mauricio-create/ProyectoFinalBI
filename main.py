@@ -55,9 +55,64 @@ ageb_cp_fast, cp_geojson = load_data()
 
 
 # =====================================
+# DICCIONARIO DE COORDENADAS (Centros de Alcaldías)
+# =====================================
+coordenadas_alcaldias = {
+    "Azcapotzalco": (19.4869, -99.1859),
+    "Coyoacán": (19.3467, -99.1617),
+    "Cuajimalpa de Morelos": (19.3692, -99.2991),
+    "Gustavo A. Madero": (19.4827, -99.1093),
+    "Iztacalco": (19.3952, -99.0977),
+    "Iztapalapa": (19.3552, -99.0622),
+    "La Magdalena Contreras": (19.3321, -99.2435),
+    "Milpa Alta": (19.1922, -99.0225),
+    "Álvaro Obregón": (19.3586, -99.2530),
+    "Tláhuac": (19.2687, -99.0069),
+    "Tlalpan": (19.1555, -99.1931),
+    "Xochimilco": (19.2433, -99.1061),
+    "Benito Juárez": (19.3806, -99.1611),
+    "Cuauhtémoc": (19.4326, -99.1432),
+    "Miguel Hidalgo": (19.4312, -99.2001),
+    "Venustiano Carranza": (19.4304, -99.0953),
+    "Todas": (19.4326, -99.1332) # Centro genérico CDMX
+}
+
+# =====================================
+# CONFIGURACIÓN DEL ESTADO DE SESIÓN (SESSION STATE)
+# =====================================
+if "metrica" not in st.session_state:
+    st.session_state.metrica = "Pob. 60+"
+if "alcaldia" not in st.session_state:
+    st.session_state.alcaldia = "Todas"
+if "cp" not in st.session_state:
+    st.session_state.cp = "Todos"
+if "zoom" not in st.session_state:
+    st.session_state.zoom = 10.0
+
+# Función que ejecuta el botón de limpiar
+def limpiar_filtros():
+    st.session_state.metrica = "Pob. 60+"
+    st.session_state.alcaldia = "Todas"
+    st.session_state.cp = "Todos"
+    st.session_state.zoom = 10.0
+
+# Función para auto-hacer zoom y resetear el CP cuando se cambia la Alcaldía
+def cambio_alcaldia():
+    st.session_state.cp = "Todos" # Resetea el CP para evitar errores
+    if st.session_state.alcaldia != "Todas":
+        st.session_state.zoom = 11.5 # Acerca el zoom si elige una alcaldía
+    else:
+        st.session_state.zoom = 10.0 # Aleja el zoom si elige "Todas"
+
+
+# =====================================
 # 2. BARRA LATERAL (SIDEBAR) PARA FILTROS
 # =====================================
 st.sidebar.header("Filtros del Dashboard")
+
+# BOTÓN LIMPIAR FILTROS
+st.sidebar.button("🧹 Limpiar Filtros", on_click=limpiar_filtros, use_container_width=True)
+st.sidebar.markdown("---")
 
 opciones_metrica = {
     "Pob. 60+": "P_60YMAS",
@@ -65,28 +120,38 @@ opciones_metrica = {
     "Autos": "VPH_AUTOM"
 }
 
-# Filtro 1: Métrica
-metrica_seleccionada = st.sidebar.selectbox(
+# Filtro 1: Métrica (Conectado al session_state mediante "key")
+st.sidebar.selectbox(
     "Selecciona la Métrica a analizar:", 
-    list(opciones_metrica.keys())
+    list(opciones_metrica.keys()),
+    key="metrica"
 )
-metrica_columna = opciones_metrica[metrica_seleccionada]
+metrica_columna = opciones_metrica[st.session_state.metrica]
 
-# Filtro 2: Alcaldía
+# Filtro 2: Alcaldía (Conectado al session_state y a la función on_change)
 lista_alcaldias = ["Todas"] + sorted(ageb_cp_fast["NOM_MUN"].dropna().unique().tolist())
-alcaldia_seleccionada = st.sidebar.selectbox("Selecciona Alcaldía:", lista_alcaldias)
+st.sidebar.selectbox(
+    "Selecciona Alcaldía:", 
+    lista_alcaldias,
+    key="alcaldia",
+    on_change=cambio_alcaldia
+)
 
-# Filtro 3: Código Postal (Se actualiza según la alcaldía seleccionada)
-if alcaldia_seleccionada != "Todas":
-    df_filtrado_alcaldia = ageb_cp_fast[ageb_cp_fast["NOM_MUN"] == alcaldia_seleccionada]
+# Filtro 3: Código Postal (Se actualiza según la alcaldía)
+if st.session_state.alcaldia != "Todas":
+    df_filtrado_alcaldia = ageb_cp_fast[ageb_cp_fast["NOM_MUN"] == st.session_state.alcaldia]
 else:
     df_filtrado_alcaldia = ageb_cp_fast
 
 lista_cps = ["Todos"] + sorted(df_filtrado_alcaldia["CP"].unique().tolist())
-cp_seleccionado = st.sidebar.selectbox("Selecciona CP:", lista_cps)
+st.sidebar.selectbox("Selecciona CP:", lista_cps, key="cp")
 
-# Switch de Modo Oscuro para el mapa
 st.sidebar.markdown("---")
+
+# SLIDER DE ZOOM (Rango 0 a 12)
+st.sidebar.slider("Nivel de Zoom del Mapa:", min_value=0.0, max_value=12.0, step=0.5, key="zoom")
+
+# Switch de Modo Oscuro
 modo_oscuro = st.sidebar.toggle("Mapa en Modo Oscuro", value=True)
 
 
@@ -95,26 +160,35 @@ modo_oscuro = st.sidebar.toggle("Mapa en Modo Oscuro", value=True)
 # =====================================
 df_final = df_filtrado_alcaldia.copy()
 
-if cp_seleccionado != "Todos":
-    df_final = df_final[df_final["CP"] == cp_seleccionado]
+if st.session_state.cp != "Todos":
+    df_final = df_final[df_final["CP"] == st.session_state.cp]
 
 
 # =====================================
 # 4. RENDERIZAR GRÁFICOS
 # =====================================
 
-# Validamos que los filtros no hayan dejado el DataFrame vacío
 if df_final.empty:
     st.warning("⚠️ No hay datos para los filtros seleccionados. Intenta otra combinación.")
 else:
-    # Generar gráficos con la data filtrada
+    # 1. Obtener coordenadas centrales para la gráfica actual basado en la alcaldía seleccionada
+    lat_centro, lon_centro = coordenadas_alcaldias.get(st.session_state.alcaldia, (19.4326, -99.1332))
+
+    # 2. Generar Gráficas
     bar_chart = BarChartGenerator(df_final)
-    fig_bar = bar_chart.create_chart(metrica_columna) 
+    fig_bar = bar_chart.create_chart(metrica_columna, modo_oscuro=modo_oscuro) 
 
     map_chart = ChoroplethMapGenerator(df_final, cp_geojson)
-    fig_map = map_chart.create_map(metrica_columna, modo_oscuro=modo_oscuro)
+    # Le pasamos nuestras nuevas variables dinámicas de mapa
+    fig_map = map_chart.create_map(
+        metrica=metrica_columna, 
+        lat=lat_centro, 
+        lon=lon_centro, 
+        zoom_level=st.session_state.zoom, 
+        modo_oscuro=modo_oscuro
+    )
 
-    # Mostrarlos en dos columnas
+    # 3. Mostrar columnas
     col1, col2 = st.columns(2)
 
     with col1:
