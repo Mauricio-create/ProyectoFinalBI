@@ -12,26 +12,7 @@ st.set_page_config(layout="wide")
 BASE_DIR = Path(__file__).resolve().parent
 
 #---------------------------------------------------------------------------------
-#Sección de código donde se hace la carga de datos
-#CENSO_CSV = BASE_DIR / "Data/AGEB/conjunto_de_datos_ageb_urbana_09_cpv2020.csv"
-#AGEB_SHP = BASE_DIR / "Data/shape/AGEB_urb_2010_5.shp"
-#CP_SHP = BASE_DIR / "Data/shape_cp/CP_09CDMX_v7.shp"
-
-#@st.cache_data(show_spinner="Procesando datos geoespaciales...", ttl=None)
-#def run_pipeline_cached(version="1"):
-#    pipeline = GeoDataPipeline(
-#        CENSO_CSV,
-#        AGEB_SHP,
-#        CP_SHP
-#    )
-#    return pipeline.run_pipeline()
-
-#ageb_cp_fast, cp_geojson = run_pipeline_cached("1")
-
-#ageb_cp_fast.to_csv("ageb_cp_fast.csv.gz",index=False)
-
-#with open("cp_geojson.json", "w") as f:
-#    json.dump(cp_geojson, f)
+# ... (Tu código comentado del pipeline se mantiene igual)
 #-----------------------------------------------------------------------------
 
 AGEB = BASE_DIR / "Data/Processed/ageb_cp_fast.csv.gz"
@@ -43,14 +24,12 @@ show_header("Dashboard Inteligencia de Negocios CDMX")
 @st.cache_data
 def load_data():
     df = pd.read_csv(AGEB, low_memory=False)
-    # Aseguramos el formato del CP desde que entra
     df["CP"] = df["CP"].astype(str).str.zfill(5) 
     with open(GEOJSON) as f:
         geojson = json.load(f)
     return df, geojson
 
 ageb_cp_fast, cp_geojson = load_data()
-
 
 # =====================================
 # DICCIONARIO DE COORDENADAS (Centros de Alcaldías)
@@ -72,7 +51,7 @@ coordenadas_alcaldias = {
     "Cuauhtémoc": (19.4326, -99.1432),
     "Miguel Hidalgo": (19.4312, -99.2001),
     "Venustiano Carranza": (19.4304, -99.0953),
-    "Todas": (19.4326, -99.1332) # Centro genérico CDMX
+    "Todas": (19.4326, -99.1332)
 }
 
 # =====================================
@@ -85,30 +64,26 @@ if "alcaldia" not in st.session_state:
 if "cp" not in st.session_state:
     st.session_state.cp = "Todos"
 if "zoom_ui" not in st.session_state:
-    st.session_state.zoom_ui = 5.5 # Equivalente a 10.0 en Mapbox
+    st.session_state.zoom_ui = 5.5 
 
-# Función que ejecuta el botón de limpiar
 def limpiar_filtros():
     st.session_state.metrica = "Pob. 60+"
     st.session_state.alcaldia = "Todas"
     st.session_state.cp = "Todos"
-    st.session_state.zoom_ui = 5.5 # Reinicia al zoom medio
+    st.session_state.zoom_ui = 5.5 
 
-# Función para auto-hacer zoom y resetear el CP cuando se cambia la Alcaldía
 def cambio_alcaldia():
-    st.session_state.cp = "Todos" # Resetea el CP para evitar errores
+    st.session_state.cp = "Todos" 
     if st.session_state.alcaldia != "Todas":
-        st.session_state.zoom_ui = 8.5 # Acerca el zoom si elige una alcaldía
+        st.session_state.zoom_ui = 8.5 
     else:
-        st.session_state.zoom_ui = 5.5 # Aleja el zoom si elige "Todas"
-
+        st.session_state.zoom_ui = 5.5 
 
 # =====================================
 # 2. BARRA LATERAL (SIDEBAR) PARA FILTROS
 # =====================================
 st.sidebar.header("Filtros del Dashboard")
 
-# BOTÓN LIMPIAR FILTROS
 st.sidebar.button("🧹 Limpiar Filtros", on_click=limpiar_filtros, use_container_width=True)
 st.sidebar.markdown("---")
 
@@ -118,24 +93,12 @@ opciones_metrica = {
     "Autos": "VPH_AUTOM"
 }
 
-# Filtro 1: Métrica (Conectado al session_state mediante "key")
-st.sidebar.selectbox(
-    "Selecciona la Métrica a analizar:", 
-    list(opciones_metrica.keys()),
-    key="metrica"
-)
+st.sidebar.selectbox("Selecciona la Métrica a analizar:", list(opciones_metrica.keys()), key="metrica")
 metrica_columna = opciones_metrica[st.session_state.metrica]
 
-# Filtro 2: Alcaldía (Conectado al session_state y a la función on_change)
 lista_alcaldias = ["Todas"] + sorted(ageb_cp_fast["NOM_MUN"].dropna().unique().tolist())
-st.sidebar.selectbox(
-    "Selecciona Alcaldía:", 
-    lista_alcaldias,
-    key="alcaldia",
-    on_change=cambio_alcaldia
-)
+st.sidebar.selectbox("Selecciona Alcaldía:", lista_alcaldias, key="alcaldia", on_change=cambio_alcaldia)
 
-# Filtro 3: Código Postal (Se actualiza según la alcaldía)
 if st.session_state.alcaldia != "Todas":
     df_filtrado_alcaldia = ageb_cp_fast[ageb_cp_fast["NOM_MUN"] == st.session_state.alcaldia]
 else:
@@ -146,12 +109,32 @@ st.sidebar.selectbox("Selecciona CP:", lista_cps, key="cp")
 
 st.sidebar.markdown("---")
 
-
-# SLIDER DE ZOOM (Rango 1 a 10 visible para el usuario)
 st.sidebar.slider("Nivel de Zoom del Mapa:", min_value=1.0, max_value=10.0, step=0.5, key="zoom_ui")
 
-# Switch de Modo Oscuro
-modo_oscuro = st.sidebar.toggle("Mapa en Modo Oscuro", value=True)
+# <-- MODIFICACIÓN: Switch general para el tablero
+modo_oscuro = st.sidebar.toggle("Tema Oscuro del Tablero", value=True)
+
+# =====================================
+# INYECCIÓN DINÁMICA DE CSS (MAGIA PARA EL TEMA)
+# =====================================
+if modo_oscuro:
+    # Colores oscuros para el fondo y letras blancas
+    st.markdown("""
+        <style>
+        .stApp { background-color: #0E1117; color: #FAFAFA; }
+        [data-testid="stHeader"] { background-color: rgba(0,0,0,0); }
+        [data-testid="stSidebar"] { background-color: #262730; }
+        </style>
+        """, unsafe_allow_html=True)
+else:
+    # Colores claros para el fondo y letras oscuras
+    st.markdown("""
+        <style>
+        .stApp { background-color: #FFFFFF; color: #262730; }
+        [data-testid="stHeader"] { background-color: rgba(0,0,0,0); }
+        [data-testid="stSidebar"] { background-color: #F0F2F6; }
+        </style>
+        """, unsafe_allow_html=True)
 
 
 # =====================================
@@ -170,11 +153,9 @@ if st.session_state.cp != "Todos":
 if df_final.empty:
     st.warning("⚠️ No hay datos para los filtros seleccionados. Intenta otra combinación.")
 else:
-    # 1. Obtener coordenadas centrales
     lat_centro, lon_centro = coordenadas_alcaldias.get(st.session_state.alcaldia, (19.4326, -99.1332))
 
-    # 2. Lógica Dinámica para la Gráfica de Barras
-    nombre_metrica_legible = st.session_state.metrica # Ej. "Pob. 60+"
+    nombre_metrica_legible = st.session_state.metrica 
     
     if st.session_state.alcaldia == "Todas":
         nivel_barras = "NOM_MUN"
@@ -183,16 +164,15 @@ else:
         nivel_barras = "CP"
         titulo_barras = f"Top 15 CPs en {st.session_state.alcaldia} - {nombre_metrica_legible}"
 
-    # 3. Generar Gráficas
+    # Pasamos la variable modo_oscuro a las gráficas para que combinen con el fondo!
     bar_chart = BarChartGenerator(df_final)
     fig_bar = bar_chart.create_chart(
         metrica=metrica_columna, 
-        nivel=nivel_barras,       # Pasamos si agrupa por Alcaldía o CP
-        titulo=titulo_barras,     # Pasamos el texto del título
+        nivel=nivel_barras,       
+        titulo=titulo_barras,     
         modo_oscuro=modo_oscuro
     ) 
 
-    # Convertir el zoom del UI (1-10) al zoom de Mapbox (8-12)
     zoom_real_mapbox = 8.0 + ((st.session_state.zoom_ui - 1.0) / 9.0) * 4.0
 
     map_chart = ChoroplethMapGenerator(df_final, cp_geojson)
@@ -204,7 +184,6 @@ else:
         modo_oscuro=modo_oscuro
     )
 
-    # 4. Mostrar columnas
     col1, col2 = st.columns(2)
 
     with col1:
