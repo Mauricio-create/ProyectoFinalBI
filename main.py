@@ -6,8 +6,8 @@ from pathlib import Path
 import streamlit as st
 import json
 import pandas as pd
-st.set_page_config(layout="wide")
 
+st.set_page_config(layout="wide")
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -34,14 +34,12 @@ BASE_DIR = Path(__file__).resolve().parent
 #    json.dump(cp_geojson, f)
 #-----------------------------------------------------------------------------
 
-
 AGEB = BASE_DIR / "Data/Processed/ageb_cp_fast.csv.gz"
 GEOJSON = BASE_DIR / "Data/Processed/cp_geojson.json"
 
 show_header("Dashboard Inteligencia de Negocios CDMX")
 
 # 1. Cargar Datos
-# Tip: st.cache_data evita que el CSV y el JSON se lean cada vez que mueves un filtro
 @st.cache_data
 def load_data():
     df = pd.read_csv(AGEB, low_memory=False)
@@ -86,23 +84,23 @@ if "alcaldia" not in st.session_state:
     st.session_state.alcaldia = "Todas"
 if "cp" not in st.session_state:
     st.session_state.cp = "Todos"
-if "zoom" not in st.session_state:
-    st.session_state.zoom = 10.0
+if "zoom_ui" not in st.session_state:
+    st.session_state.zoom_ui = 5.5 # Equivalente a 10.0 en Mapbox
 
 # Función que ejecuta el botón de limpiar
 def limpiar_filtros():
     st.session_state.metrica = "Pob. 60+"
     st.session_state.alcaldia = "Todas"
     st.session_state.cp = "Todos"
-    st.session_state.zoom = 10.0
+    st.session_state.zoom_ui = 5.5 # Reinicia al zoom medio
 
 # Función para auto-hacer zoom y resetear el CP cuando se cambia la Alcaldía
 def cambio_alcaldia():
     st.session_state.cp = "Todos" # Resetea el CP para evitar errores
     if st.session_state.alcaldia != "Todas":
-        st.session_state.zoom = 11.5 # Acerca el zoom si elige una alcaldía
+        st.session_state.zoom_ui = 8.5 # Acerca el zoom si elige una alcaldía
     else:
-        st.session_state.zoom = 10.0 # Aleja el zoom si elige "Todas"
+        st.session_state.zoom_ui = 5.5 # Aleja el zoom si elige "Todas"
 
 
 # =====================================
@@ -148,8 +146,9 @@ st.sidebar.selectbox("Selecciona CP:", lista_cps, key="cp")
 
 st.sidebar.markdown("---")
 
-# SLIDER DE ZOOM (Rango 0 a 12)
-st.sidebar.slider("Nivel de Zoom del Mapa:", min_value=8.0, max_value=12.0, step=0.5, key="zoom")
+
+# SLIDER DE ZOOM (Rango 1 a 10 visible para el usuario)
+st.sidebar.slider("Nivel de Zoom del Mapa:", min_value=1.0, max_value=10.0, step=0.5, key="zoom_ui")
 
 # Switch de Modo Oscuro
 modo_oscuro = st.sidebar.toggle("Mapa en Modo Oscuro", value=True)
@@ -178,13 +177,16 @@ else:
     bar_chart = BarChartGenerator(df_final)
     fig_bar = bar_chart.create_chart(metrica_columna, modo_oscuro=modo_oscuro) 
 
+    # Convertir el zoom del UI (1-10) al zoom de Mapbox (8-12)
+    zoom_real_mapbox = 8.0 + ((st.session_state.zoom_ui - 1.0) / 9.0) * 4.0
+
     map_chart = ChoroplethMapGenerator(df_final, cp_geojson)
     # Le pasamos nuestras nuevas variables dinámicas de mapa
     fig_map = map_chart.create_map(
         metrica=metrica_columna, 
         lat=lat_centro, 
         lon=lon_centro, 
-        zoom_level=st.session_state.zoom, 
+        zoom_level=zoom_real_mapbox, 
         modo_oscuro=modo_oscuro
     )
 
