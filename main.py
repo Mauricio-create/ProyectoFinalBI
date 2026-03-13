@@ -170,18 +170,32 @@ if st.session_state.cp != "Todos":
 if df_final.empty:
     st.warning("⚠️ No hay datos para los filtros seleccionados. Intenta otra combinación.")
 else:
-    # 1. Obtener coordenadas centrales para la gráfica actual basado en la alcaldía seleccionada
+    # 1. Obtener coordenadas centrales
     lat_centro, lon_centro = coordenadas_alcaldias.get(st.session_state.alcaldia, (19.4326, -99.1332))
 
-    # 2. Generar Gráficas
+    # 2. Lógica Dinámica para la Gráfica de Barras
+    nombre_metrica_legible = st.session_state.metrica # Ej. "Pob. 60+"
+    
+    if st.session_state.alcaldia == "Todas":
+        nivel_barras = "NOM_MUN"
+        titulo_barras = f"Top 15 Alcaldías - {nombre_metrica_legible}"
+    else:
+        nivel_barras = "CP"
+        titulo_barras = f"Top 15 CPs en {st.session_state.alcaldia} - {nombre_metrica_legible}"
+
+    # 3. Generar Gráficas
     bar_chart = BarChartGenerator(df_final)
-    fig_bar = bar_chart.create_chart(metrica_columna, modo_oscuro=modo_oscuro) 
+    fig_bar = bar_chart.create_chart(
+        metrica=metrica_columna, 
+        nivel=nivel_barras,       # Pasamos si agrupa por Alcaldía o CP
+        titulo=titulo_barras,     # Pasamos el texto del título
+        modo_oscuro=modo_oscuro
+    ) 
 
     # Convertir el zoom del UI (1-10) al zoom de Mapbox (8-12)
     zoom_real_mapbox = 8.0 + ((st.session_state.zoom_ui - 1.0) / 9.0) * 4.0
 
     map_chart = ChoroplethMapGenerator(df_final, cp_geojson)
-    # Le pasamos nuestras nuevas variables dinámicas de mapa
     fig_map = map_chart.create_map(
         metrica=metrica_columna, 
         lat=lat_centro, 
@@ -190,7 +204,7 @@ else:
         modo_oscuro=modo_oscuro
     )
 
-    # 3. Mostrar columnas
+    # 4. Mostrar columnas
     col1, col2 = st.columns(2)
 
     with col1:
