@@ -136,6 +136,9 @@ modo_oscuro = st.sidebar.toggle("Tema Oscuro del Tablero", value=True)
 # =====================================
 # INYECCIÓN DINÁMICA DE CSS (MAGIA PARA EL TEMA)
 # =====================================
+# =====================================
+# INYECCIÓN DINÁMICA DE CSS (MAGIA PARA EL TEMA)
+# =====================================
 if modo_oscuro:
     # Colores oscuros para el fondo y letras forzadas a blanco
     st.markdown("""
@@ -151,6 +154,11 @@ if modo_oscuro:
         [data-testid="stSidebar"] h1, 
         [data-testid="stSidebar"] h2, 
         [data-testid="stSidebar"] h3 {
+            color: #FAFAFA !important;
+        }
+        
+        /* Forzar texto blanco en los botones de la barra lateral (Limpiar Filtros) */
+        [data-testid="stSidebar"] button * {
             color: #FAFAFA !important;
         }
         </style>
@@ -172,9 +180,13 @@ else:
         [data-testid="stSidebar"] h3 {
             color: #262730 !important;
         }
+        
+        /* Forzar texto negro en los botones de la barra lateral (Limpiar Filtros) */
+        [data-testid="stSidebar"] button * {
+            color: #262730 !important;
+        }
         </style>
         """, unsafe_allow_html=True)
-
 
 # =====================================
 # 3. APLICAR FILTROS A LA DATA
