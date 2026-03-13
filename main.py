@@ -43,16 +43,16 @@ def toggle_vista():
     st.session_state.vista_detalle = not st.session_state.vista_detalle
 
 # --- CARGA DE DATOS ---
-AGEB = BASE_DIR / "Data/Processed/ageb_cp_fast.csv.gz"
-GEOJSON = BASE_DIR / "Data/Processed/cp_geojson.json"
+AGEB_PATH = BASE_DIR / "Data/Processed/ageb_cp_fast.csv.gz"
+GEOJSON_PATH = BASE_DIR / "Data/Processed/cp_geojson.json"
 
 show_header("Dashboard Inteligencia de Negocios CDMX")
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv(AGEB, low_memory=False)
+    df = pd.read_csv(AGEB_PATH, low_memory=False)
     df["CP"] = df["CP"].astype(str).str.zfill(5) 
-    with open(GEOJSON) as f:
+    with open(GEOJSON_PATH) as f:
         geojson = json.load(f)
     return df, geojson
 
@@ -97,40 +97,30 @@ def limpiar_filtros():
 
 def cambio_alcaldia():
     st.session_state.cp = "Todos" 
-    if st.session_state.alcaldia != "Todas":
-        st.session_state.zoom_ui = 8.5 
-    else:
-        st.session_state.zoom_ui = 5.5 
+    st.session_state.zoom_ui = 8.5 if st.session_state.alcaldia != "Todas" else 5.5
 
 # =====================================
-# SIDEBAR
+# SIDEBAR (FILTROS Y NAVEGACIÓN)
 # =====================================
 st.sidebar.header("Filtros del Dashboard")
 
-# Botones de Acción (Siempre Negros con letra Blanca)
+# Botones de Acción: Siempre Negros con letra Blanca
 st.sidebar.button("🧹 Limpiar Filtros", on_click=limpiar_filtros, width="stretch")
 
 texto_nav = "📊 Ir a Dashboard" if st.session_state.vista_detalle else "🔍 Ir a Detalle ->"
 st.sidebar.button(texto_nav, on_click=toggle_vista, width="stretch")
 
-# Mostrar exportar solo en vista detalle
-if st.session_state.vista_detalle:
-    st.sidebar.markdown("---")
-    # Nota: show_export_button debe estar configurado con width="stretch" dentro de su módulo
-    # Si no, puedes pasarle la data filtrada aquí abajo en la sección de renderizado.
-
 st.sidebar.markdown("---")
 
 opciones_metrica = {"Pob. 60+": "P_60YMAS", "Riqueza": "INDICE_RIQUEZA", "Autos": "VPH_AUTOM"}
-st.sidebar.selectbox("Selecciona Métrica:", list(opciones_metrica.keys()), key="metrica")
+st.sidebar.selectbox("Selecciona la Métrica:", list(opciones_metrica.keys()), key="metrica")
 metrica_columna = opciones_metrica[st.session_state.metrica]
 
 lista_alcaldias = ["Todas"] + sorted(ageb_cp_fast["NOM_MUN"].dropna().unique().tolist())
 st.sidebar.selectbox("Selecciona Alcaldía:", lista_alcaldias, key="alcaldia", on_change=cambio_alcaldia)
 
-# Filtrado intermedio para el select de CP
+# Filtrado dinámico para la lista de CPs
 df_filtrado_alcaldia = ageb_cp_fast[ageb_cp_fast["NOM_MUN"] == st.session_state.alcaldia] if st.session_state.alcaldia != "Todas" else ageb_cp_fast
-
 lista_cps = ["Todos"] + sorted(df_filtrado_alcaldia["CP"].unique().tolist())
 st.sidebar.selectbox("Selecciona CP:", lista_cps, key="cp")
 
@@ -144,7 +134,7 @@ modo_oscuro = st.sidebar.toggle("Tema Oscuro del Tablero", value=True)
 color_bg_botones = "#262730" 
 st.markdown(f"""
     <style>
-    /* Estilo para botones de la barra lateral */
+    /* Forzar estilo en botones de la sidebar */
     [data-testid="stSidebar"] button {{
         background-color: {color_bg_botones} !important;
         color: white !important;
@@ -153,7 +143,7 @@ st.markdown(f"""
     [data-testid="stSidebar"] button p {{
         color: white !important;
     }}
-    /* Temas Dinámicos */
+    /* Fondos dinámicos */
     .stApp {{ 
         background-color: {"#0E1117" if modo_oscuro else "#FFFFFF"}; 
         color: {"#FAFAFA" if modo_oscuro else "#262730"}; 
@@ -175,20 +165,27 @@ if st.session_state.cp != "Todos":
 # RENDERIZADO DE CONTENIDO
 # =====================================
 if df_final.empty:
-    st.warning("⚠️ No hay datos para los filtros seleccionados.")
+    st.warning("⚠️ No hay datos para los filtros seleccionados. Intenta otra combinación.")
 else:
     if st.session_state.vista_detalle:
         # --- MODO DETALLE (TABLA) ---
         st.subheader(f"Vista de Detalle: {st.session_state.alcaldia} - {st.session_state.cp}")
         
-        # El botón de exportar solo aparece aquí
-        show_export_button(df_final) 
+        # Seleccionamos solo columnas importantes para que sea legible
+        columnas_tabla = ["NOM_MUN", "CP", "AGEB", "POBTOT", "P_60YMAS", "INDICE_RIQUEZA", "VPH_AUTOM"]
+        df_tabla = df_final[columnas_tabla].copy()
         
-        table_gen = TableViewGenerator(df_final)
+        # Renombramos para el usuario final
+        df_tabla.columns = ["Alcaldía", "CP", "AGEB", "Pob. Total", "Pob. 60+", "Riqueza", "Autos"]
+        
+        # Botón de exportar aparece solo aquí
+        show_export_button(df_tabla) 
+        
+        table_gen = TableViewGenerator(df_tabla)
         table_gen.render_table()
         
     else:
-        # --- MODO DASHBOARD (MAPA Y GRÁFICAS) ---
+        # --- MODO DASHBOARD (GRÁFICAS) ---
         lat_centro, lon_centro = coordenadas_alcaldias.get(st.session_state.alcaldia, (19.4326, -99.1332))
         
         col1, col2 = st.columns(2)
