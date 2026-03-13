@@ -149,7 +149,7 @@ st.sidebar.selectbox("Selecciona CP:", lista_cps, key="cp")
 st.sidebar.markdown("---")
 
 # SLIDER DE ZOOM (Rango 0 a 12)
-st.sidebar.slider("Nivel de Zoom del Mapa:", min_value=0.0, max_value=12.0, step=0.5, key="zoom")
+st.sidebar.slider("Nivel de Zoom del Mapa:", min_value=8.0, max_value=12.0, step=0.5, key="zoom")
 
 # Switch de Modo Oscuro
 modo_oscuro = st.sidebar.toggle("Mapa en Modo Oscuro", value=True)
