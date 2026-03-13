@@ -137,21 +137,41 @@ modo_oscuro = st.sidebar.toggle("Tema Oscuro del Tablero", value=True)
 # INYECCIÓN DINÁMICA DE CSS (MAGIA PARA EL TEMA)
 # =====================================
 if modo_oscuro:
-    # Colores oscuros para el fondo y letras blancas
+    # Colores oscuros para el fondo y letras forzadas a blanco
     st.markdown("""
         <style>
         .stApp { background-color: #0E1117; color: #FAFAFA; }
         [data-testid="stHeader"] { background-color: rgba(0,0,0,0); }
         [data-testid="stSidebar"] { background-color: #262730; }
+        
+        /* Forzar texto blanco en la barra lateral */
+        [data-testid="stSidebar"] p, 
+        [data-testid="stSidebar"] span, 
+        [data-testid="stSidebar"] label, 
+        [data-testid="stSidebar"] h1, 
+        [data-testid="stSidebar"] h2, 
+        [data-testid="stSidebar"] h3 {
+            color: #FAFAFA !important;
+        }
         </style>
         """, unsafe_allow_html=True)
 else:
-    # Colores claros para el fondo y letras oscuras
+    # Colores claros para el fondo y letras forzadas a negro
     st.markdown("""
         <style>
         .stApp { background-color: #FFFFFF; color: #262730; }
         [data-testid="stHeader"] { background-color: rgba(0,0,0,0); }
         [data-testid="stSidebar"] { background-color: #F0F2F6; }
+        
+        /* Forzar texto oscuro en la barra lateral */
+        [data-testid="stSidebar"] p, 
+        [data-testid="stSidebar"] span, 
+        [data-testid="stSidebar"] label, 
+        [data-testid="stSidebar"] h1, 
+        [data-testid="stSidebar"] h2, 
+        [data-testid="stSidebar"] h3 {
+            color: #262730 !important;
+        }
         </style>
         """, unsafe_allow_html=True)
 
@@ -183,7 +203,6 @@ else:
         nivel_barras = "CP"
         titulo_barras = f"Top 15 CPs en {st.session_state.alcaldia} - {nombre_metrica_legible}"
 
-    # Pasamos la variable modo_oscuro a las gráficas para que combinen con el fondo!
     bar_chart = BarChartGenerator(df_final)
     fig_bar = bar_chart.create_chart(
         metrica=metrica_columna, 
