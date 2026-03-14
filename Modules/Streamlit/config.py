@@ -27,18 +27,50 @@ def apply_styles(modo_oscuro):
     color_bg_sidebar = "#262730" if modo_oscuro else "#f0f2f6"
     color_bg_app = "#0E1117" if modo_oscuro else "#FFFFFF"
     color_text = "#FAFAFA" if modo_oscuro else "#262730"
+    
+    # Color de los botones (siempre oscuros según tu código original)
+    color_btn_bg = "#262730"
+    color_btn_text = "white"
 
     st.markdown(f"""
-            <style>
+        <style>
+            /* Fondo de la App y color de texto general */
+            .stApp {{ 
+                background-color: {color_bg_app}; 
+                color: {color_text}; 
+            }}
+
+            /* Fondo de la Sidebar */
+            [data-testid="stSidebar"] {{ 
+                background-color: {color_bg_sidebar} !important; 
+            }}
+
+            /* Forzar color de texto en TODA la sidebar (Headers, Labels, Textos) */
+            [data-testid="stSidebar"] .stMarkdown p, 
+            [data-testid="stSidebar"] label, 
+            [data-testid="stSidebar"] h1, 
+            [data-testid="stSidebar"] h2, 
+            [data-testid="stSidebar"] h3,
+            [data-testid="stSidebar"] .stWidgetLabel p {{
+                color: {color_text} !important;
+            }}
+
+            /* Estilo específico para los botones de la sidebar */
             [data-testid="stSidebar"] button {{
-                background-color: #262730 !important;
-                color: white !important;
+                background-color: {color_btn_bg} !important;
+                color: {color_btn_text} !important;
                 border: 1px solid #444 !important;
             }}
-            [data-testid="stSidebar"] button p {{ color: white !important; }}
-            .stApp {{ background-color: {color_bg_app}; color: {color_text}; }}
-            [data-testid="stSidebar"] {{ background-color: {color_bg_sidebar} !important; }}
-            </style>
+            
+            [data-testid="stSidebar"] button p {{ 
+                color: {color_btn_text} !important; 
+            }}
+
+            /* Ajuste para el slider y otros widgets */
+            [data-testid="stSidebar"] .stSlider {{
+                color: {color_text} !important;
+            }}
+        </style>
         """, unsafe_allow_html=True)
     
 @st.cache_data
