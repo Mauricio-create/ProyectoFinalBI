@@ -33,20 +33,24 @@ BASE_DIR = Path(__file__).resolve().parent
 
 def main(): 
     init_session_state()
-    df, geojson = load_all_data(BASE_DIR)
+    df_raw, geojson = load_all_data(BASE_DIR) # Cargamos los datos originales
 
     show_header("Dashboard Inteligencia de Negocios CDMX")
-    metrica_col, modo_oscuro = render_sidebar(df)
+    
+    metrica_col, modo_oscuro = render_sidebar(df_raw)
     apply_styles(modo_oscuro)
 
-    df_final = df.copy()
+
+    df_final = df_raw.copy()
+
     if st.session_state.alcaldia != "Todas":
         df_final = df_final[df_final["NOM_MUN"] == st.session_state.alcaldia]
+    
     if st.session_state.cp != "Todos":
-        df_final = df_final[df_final["CP"] == st.session_state.cp]
+        df_final = df_final[df_final["CP"].astype(str) == str(st.session_state.cp)]
 
     if df_final.empty:
-        st.warning("⚠️ No hay datos para los filtros seleccionados.")
+        st.warning(f"⚠️ No hay datos para: {st.session_state.alcaldia} - CP: {st.session_state.cp}")
         return
 
     if st.session_state.vista_detalle:
