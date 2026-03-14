@@ -67,7 +67,7 @@ def get_coordenadas():
 def render_sidebar(df): 
     st.sidebar.header("Filtros del Dashboard")
 
-    col_nav1, col_nav2 = st.sidebar(2)
+    col_nav1, col_nav2 = st.sidebar.columns(2)
     if col_nav1.button("🧹 Limpiar", width="stretch"): 
         st.session_state.metrica, st.session_state.alcaldia = "Pob. 60+", "Todas"
         st.session_state.cp, st.session_state.zoom_ui = "Todos", 5.5
