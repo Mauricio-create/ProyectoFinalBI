@@ -3,7 +3,6 @@ from Modules.Visualizations.header import show_header
 from Modules.Streamlit.config import init_session_state, load_all_data, render_sidebar, apply_styles,render_detail_view,render_dashboard_view
 from pathlib import Path
 import streamlit as st
-import pandas as pd
 
 st.set_page_config(layout="wide")
 
