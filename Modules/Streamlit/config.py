@@ -101,7 +101,6 @@ def render_sidebar(df):
 
     col_nav1, col_nav2 = st.sidebar.columns(2)
     
-    # Botón Limpiar
     if col_nav1.button("🧹 Limpiar", use_container_width=True): 
         st.session_state.metrica = "Pob. 60+"
         st.session_state.alcaldia = "Todas"
@@ -109,7 +108,6 @@ def render_sidebar(df):
         st.session_state.zoom_ui = 5.5
         st.rerun()
 
-    # Botón de Cambio de Vista
     texto_btn = "📊 Dashboard" if st.session_state.vista_detalle else "🔍 Detalle"
     if col_nav2.button(texto_btn, use_container_width=True):
         st.session_state.vista_detalle = not st.session_state.vista_detalle
@@ -117,45 +115,46 @@ def render_sidebar(df):
 
     st.sidebar.markdown("---")
 
-    # --- Métrica ---
+    # --- MÉTRICA ---
     opciones_metrica = {"Pob. 60+": "P_60YMAS", "Riqueza": "INDICE_RIQUEZA", "Autos": "VPH_AUTOM"}
     lista_metrica = list(opciones_metrica.keys())
-    # Forzamos el índice basado en lo que hay en session_state
     idx_metrica = lista_metrica.index(st.session_state.metrica)
-    metrica_label = st.sidebar.selectbox("Métrica:", lista_metrica, index=idx_metrica, key="metrica")
     
-    # --- Alcaldía ---
+    # Eliminamos 'key' y usamos el retorno para actualizar el estado
+    res_metrica = st.sidebar.selectbox("Métrica:", lista_metrica, index=idx_metrica)
+    st.session_state.metrica = res_metrica
+    
+    # --- ALCALDÍA ---
     alcaldias = ["Todas"] + sorted(df["NOM_MUN"].dropna().unique().tolist())
     idx_alc = alcaldias.index(st.session_state.alcaldia) if st.session_state.alcaldia in alcaldias else 0
     
-    st.sidebar.selectbox(
-        "Alcaldía:", 
-        alcaldias, 
-        index=idx_alc,
-        key="alcaldia", 
-        on_change=lambda: st.session_state.update({
-            "cp": "Todos", 
-            "zoom_ui": 8.5 if st.session_state.alcaldia != "Todas" else 5.5
-        })
-    )
+    res_alcaldia = st.sidebar.selectbox("Alcaldía:", alcaldias, index=idx_alc)
     
-    # --- Código Postal ---
+    # Si la alcaldía cambió, reseteamos CP y Zoom
+    if res_alcaldia != st.session_state.alcaldia:
+        st.session_state.alcaldia = res_alcaldia
+        st.session_state.cp = "Todos"
+        st.session_state.zoom_ui = 8.5 if res_alcaldia != "Todas" else 5.5
+        st.rerun()
+
+    # --- CÓDIGO POSTAL ---
     df_muni = df[df["NOM_MUN"] == st.session_state.alcaldia] if st.session_state.alcaldia != "Todas" else df
     lista_cp = ["Todos"] + sorted(df_muni["CP"].unique().tolist())
     
-    # Manejo de error por si el CP seleccionado no existe en la nueva alcaldía
     idx_cp = lista_cp.index(st.session_state.cp) if st.session_state.cp in lista_cp else 0
-    st.sidebar.selectbox("Código Postal:", lista_cp, index=idx_cp, key="cp")
+    res_cp = st.sidebar.selectbox("Código Postal:", lista_cp, index=idx_cp)
+    st.session_state.cp = res_cp
 
     st.sidebar.markdown("---")
     
-    # --- Slider y Toggle ---
-    st.sidebar.slider("Zoom:", 1.0, 10.0, step=0.5, key="zoom_ui")
+    # --- SLIDER Y TOGGLE ---
+    # Para el slider usamos 'value' en lugar de confiar solo en la 'key'
+    res_zoom = st.sidebar.slider("Zoom:", 1.0, 10.0, value=st.session_state.zoom_ui, step=0.5)
+    st.session_state.zoom_ui = res_zoom
     
-    # Nota: El toggle necesita el parámetro 'value' vinculado al estado
     oscuro = st.sidebar.toggle("Tema Oscuro", value=True)
     
-    return opciones_metrica[metrica_label], oscuro
+    return opciones_metrica[st.session_state.metrica], oscuro
 
 def render_dashboard_view(df, geojson, metrica_col, modo_oscuro): 
     coords = get_coordenadas()
