@@ -101,7 +101,6 @@ def render_sidebar(df):
 
     col_nav1, col_nav2 = st.sidebar.columns(2)
     
-    # Botón Limpiar
     if col_nav1.button("🧹 Limpiar", use_container_width=True): 
         st.session_state.metrica = "Pob. 60+"
         st.session_state.alcaldia = "Todas"
@@ -109,7 +108,6 @@ def render_sidebar(df):
         st.session_state.zoom_ui = 5.5
         st.rerun()
 
-    # Botón de Cambio de Vista
     texto_btn = "📊 Dashboard" if st.session_state.vista_detalle else "🔍 Detalle"
     if col_nav2.button(texto_btn, use_container_width=True):
         st.session_state.vista_detalle = not st.session_state.vista_detalle
@@ -120,21 +118,19 @@ def render_sidebar(df):
     # --- MÉTRICA ---
     opciones_metrica = {"Pob. 60+": "P_60YMAS", "Riqueza": "INDICE_RIQUEZA", "Autos": "VPH_AUTOM"}
     lista_metrica = list(opciones_metrica.keys())
-    
-    # Buscamos el índice actual en el session_state
     idx_metrica = lista_metrica.index(st.session_state.metrica)
     
-    # USAMOS KEY FIJA PARA QUE STREAMLIT RECONOZCA EL WIDGET ENTRE RERUNS
-    res_metrica = st.sidebar.selectbox("Métrica:", lista_metrica, index=idx_metrica, key="sb_metrica")
+    # Eliminamos 'key' y usamos el retorno para actualizar el estado
+    res_metrica = st.sidebar.selectbox("Métrica:", lista_metrica, index=idx_metrica)
     st.session_state.metrica = res_metrica
     
     # --- ALCALDÍA ---
     alcaldias = ["Todas"] + sorted(df["NOM_MUN"].dropna().unique().tolist())
     idx_alc = alcaldias.index(st.session_state.alcaldia) if st.session_state.alcaldia in alcaldias else 0
     
-    res_alcaldia = st.sidebar.selectbox("Alcaldía:", alcaldias, index=idx_alc, key="sb_alcaldia")
+    res_alcaldia = st.sidebar.selectbox("Alcaldía:", alcaldias, index=idx_alc)
     
-    # Lógica de cambio de alcaldía
+    # Si la alcaldía cambió, reseteamos CP y Zoom
     if res_alcaldia != st.session_state.alcaldia:
         st.session_state.alcaldia = res_alcaldia
         st.session_state.cp = "Todos"
@@ -145,22 +141,18 @@ def render_sidebar(df):
     df_muni = df[df["NOM_MUN"] == st.session_state.alcaldia] if st.session_state.alcaldia != "Todas" else df
     lista_cp = ["Todos"] + sorted(df_muni["CP"].unique().tolist())
     
-    # Aseguramos que el CP guardado exista en la nueva lista, si no, vamos a "Todos"
-    if st.session_state.cp not in lista_cp:
-        st.session_state.cp = "Todos"
-    
-    idx_cp = lista_cp.index(st.session_state.cp)
-    res_cp = st.sidebar.selectbox("Código Postal:", lista_cp, index=idx_cp, key="sb_cp")
+    idx_cp = lista_cp.index(st.session_state.cp) if st.session_state.cp in lista_cp else 0
+    res_cp = st.sidebar.selectbox("Código Postal:", lista_cp, index=idx_cp)
     st.session_state.cp = res_cp
 
     st.sidebar.markdown("---")
     
     # --- SLIDER Y TOGGLE ---
-    res_zoom = st.sidebar.slider("Zoom:", 1.0, 10.0, value=st.session_state.zoom_ui, step=0.5, key="sb_zoom")
+    # Para el slider usamos 'value' en lugar de confiar solo en la 'key'
+    res_zoom = st.sidebar.slider("Zoom:", 1.0, 10.0, value=st.session_state.zoom_ui, step=0.5)
     st.session_state.zoom_ui = res_zoom
     
-    # El toggle también necesita key para no resetearse
-    oscuro = st.sidebar.toggle("Tema Oscuro", value=True, key="sb_oscuro")
+    oscuro = st.sidebar.toggle("Tema Oscuro", value=True)
     
     return opciones_metrica[st.session_state.metrica], oscuro
 
