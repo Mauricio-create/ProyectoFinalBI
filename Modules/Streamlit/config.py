@@ -1,3 +1,13 @@
+"""
+# Módulo de Configuración y Utilidades de Interfaz (Streamlit)
+
+Este módulo centraliza la lógica de control de la aplicación, gestionando:
+1. **Estado de Sesión**: Inicialización y persistencia de filtros.
+2. **Estilos Dinámicos**: Inyección de CSS para temas claro y oscuro.
+3. **Controladores de Vista**: Renderizado de la barra lateral y gestión de navegación.
+4. **Carga de Datos**: Manejo de caché para optimizar el rendimiento.
+"""
+
 import streamlit as st
 import json
 import pandas as pd
@@ -12,7 +22,12 @@ st.set_page_config(layout="wide",page_title="BI CDMX")
 
 
 def init_session_state():
-
+    """
+    Inicializa las variables del `st.session_state` con valores por defecto.
+    
+    Asegura que la aplicación no falle al intentar acceder a filtros antes de 
+    que el usuario interactúe con la barra lateral.
+    """
     defaults = {
         "vista_detalle": False,
         "metrica": "Pob. 60+",
@@ -28,6 +43,18 @@ def init_session_state():
 
 
 def apply_styles(modo_oscuro):
+    """
+    Inyecta CSS personalizado en la aplicación basándose en el tema seleccionado.
+    
+    **Elementos personalizados:**
+    * Fondos de aplicación y barra lateral.
+    * Colores de texto para etiquetas, encabezados y párrafos.
+    * Estilo de botones y sliders para mantener consistencia visual.
+
+    **Args:**
+        modo_oscuro (bool): Determina si se aplican colores de alto contraste (oscuro) 
+        o colores institucionales suaves (claro).
+    """
     color_bg_sidebar = "#262730" if modo_oscuro else "#f0f2f6"
     color_bg_app = "#0E1117" if modo_oscuro else "#FFFFFF"
     color_text = "#FAFAFA" if modo_oscuro else "#262730"
@@ -93,6 +120,18 @@ def apply_styles(modo_oscuro):
 
 @st.cache_data
 def load_all_data(path):
+    """
+    Carga los datasets procesados desde el almacenamiento local.
+    
+    Utiliza el decorador `@st.cache_data` para evitar lecturas de disco repetitivas 
+    en cada interacción del usuario.
+
+    **Args:**
+        path (Path): Ruta base del proyecto.
+
+    **Returns:**
+        tuple: (pd.DataFrame, dict) conteniendo el CSV de AGEB y el JSON de polígonos.
+    """
     df = pd.read_csv(f"{path}/Data/Processed/ageb_cp_fast.csv.gz")
     df["CP"] = df["CP"].astype(str).str.zfill(5)
 
@@ -103,6 +142,12 @@ def load_all_data(path):
 
 
 def get_coordenadas():
+    """
+    Diccionario maestro de coordenadas geográficas.
+    
+    **Returns:**
+        dict: Mapeo de nombres de Alcaldías a tuplas `(latitud, longitud)`.
+    """
     return {
         "Azcapotzalco": (19.4869, -99.1859), "Coyoacán": (19.3467, -99.1617),
         "Cuajimalpa de Morelos": (19.3692, -99.2991), "Gustavo A. Madero": (19.4827, -99.1093),
@@ -117,6 +162,17 @@ def get_coordenadas():
 
 
 def render_sidebar(df):
+    """
+    Renderiza los controles de filtrado y navegación en el lateral.
+    
+    **Funcionalidades:**
+    * **Limpiar**: Resetea el `session_state` a valores iniciales.
+    * **Cambio de Vista**: Alterna entre el Tablero visual y el Detalle tabular.
+    * **Selectores**: Filtros dinámicos de métrica, alcaldía y CP (con cascada).
+
+    **Returns:**
+        tuple: (str, bool) Métrica seleccionada y estado del modo oscuro.
+    """
     st.sidebar.header("Filtros del Dashboard")
     col_nav1, col_nav2 = st.sidebar.columns(2)
     if col_nav1.button("🧹 Limpiar", width="stretch"):
@@ -153,6 +209,9 @@ def render_sidebar(df):
 
 
 def render_dashboard_view(df, geojson, metrica_col, modo_oscuro):
+    """
+    Orquestador de la vista visual (Gráficas + Mapa).
+    """
     coords = get_coordenadas()
     lat, lon = coords.get(st.session_state.alcaldia, coords["Todas"])
     zoom_real = 8.0 + ((st.session_state.zoom_ui - 1.0)/9.0)*4.0
@@ -172,6 +231,9 @@ def render_dashboard_view(df, geojson, metrica_col, modo_oscuro):
 
 
 def render_detail_view(df):
+    """
+    Orquestador de la vista de datos crudos y exportación.
+    """
     st.subheader(f"Vista de Detalle: {st.session_state.alcaldia} - {st.session_state.cp}")
     cols = ["NOM_MUN", "CP", "AGEB", "POBTOT", "P_60YMAS", "INDICE_RIQUEZA", "VPH_AUTOM"]
     df_tabla = df[cols].copy()
