@@ -124,7 +124,7 @@ def render_sidebar(df):
         st.session_state.cp, st.session_state.zoom_ui = "Todos", 5.5
         st.rerun()
 
-    texto_btn = "📊 Dashboard" if st.session_state.vista_detalle else "🔍 Detalle"
+    texto_btn = "📊 Tablero" if st.session_state.vista_detalle else "🔍 Detalle"
 
     if col_nav2.button(texto_btn, width="stretch"):
         st.session_state.vista_detalle = not st.session_state.vista_detalle
