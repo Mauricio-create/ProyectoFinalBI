@@ -2,10 +2,10 @@ import streamlit as st
 import json
 import pandas as pd
 from pathlib import Path
-from Visualizations.bar_chart import BarChartGenerator
-from Visualizations.choropleth_map import ChoroplethMapGenerator
-from Visualizations.header import show_header
-from Visualizations.table_view import TableViewGenerator, show_export_button
+from Modules.Visualizations.bar_chart import BarChartGenerator
+from Modules.Visualizations.choropleth_map import ChoroplethMapGenerator
+from Modules.Visualizations.header import show_header
+from Modules.Visualizations.table_view import TableViewGenerator, show_export_button
 
 st.set_page_config(layout="wide",page_title="BI CDMX")
 
@@ -43,10 +43,10 @@ def apply_styles(modo_oscuro):
     
 @st.cache_data
 def load_all_data(path): 
-    df = pd.read_csv(path / "Date/Processed/ageb_cp_fast.csv.gz")
+    df = pd.read_csv(f"{path}/Data/Processed/ageb_cp_fast.csv.gz")
     df["CP"] = df["CP"].astype(str).str.zfill(5)
 
-    with open(path / "Date/Processed/cp_geojson.json") as f: 
+    with open(f"{path}/Data/Processed/cp_geojson.json") as f: 
         geojson = json.load(f)
 
     return df, geojson
