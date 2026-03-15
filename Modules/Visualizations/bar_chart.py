@@ -63,19 +63,16 @@ class BarChartGenerator:
         metricas = list(pesos.keys())
         cols_a_sumar = metricas + ["POBTOT"]
         
-        # 1. Agrupación
+
         df_res = self.df.groupby(nivel)[cols_a_sumar].sum().reset_index()
         df_res = df_res[df_res["POBTOT"] > 0]
         
-        # 2 y 3. Cálculo del Score Ponderado
+
         df_res["Score"] = 0.0
         for metrica, peso in pesos.items():
-            # Porcentaje de la métrica respecto a la población
             pct_metrica = (df_res[metrica] / df_res["POBTOT"]) * 100
-            # Sumamos al score ponderado
             df_res["Score"] += pct_metrica * peso
             
-        # 4. Ranking Top 15
         df_res = df_res.sort_values("Score", ascending=False).head(15)
         
         if nivel == "CP":
@@ -83,7 +80,6 @@ class BarChartGenerator:
 
         tema = "plotly_dark" if modo_oscuro else "plotly_white"
 
-        # Usamos la escala 'Plasma' para diferenciar visualmente que esto es un Score y no una métrica normal
         fig = px.bar(
             df_res, x=nivel, y="Score", color="Score",
             template=tema, color_continuous_scale="Plasma", title=titulo 

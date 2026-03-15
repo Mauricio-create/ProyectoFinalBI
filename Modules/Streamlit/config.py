@@ -61,7 +61,6 @@ def apply_styles(modo_oscuro):
 
    
 
-    # Color de los botones (siempre oscuros según tu código original)
 
     color_btn_bg = "#262730"
     color_btn_text = "white"
@@ -220,25 +219,48 @@ def render_dashboard_view(df, geojson, metrica_col, modo_oscuro):
 
     with col1:
         nivel = "CP" if st.session_state.alcaldia != "Todas" else "NOM_MUN"
-        mis_pesos = {
-            "INDICE_RIQUEZA": 0.40,
-            "P_60YMAS": 0.40,
-            "VPH_AUTOM": 0.20
-        }
-        fig_bar = BarChartGenerator(df).create_scoring_chart(
-            pesos=mis_pesos,
-            nivel=nivel,
-            titulo="Índice de Oportunidad Comercial (Score)", 
-            modo_oscuro=modo_oscuro
-        )
+        
+        usar_score = st.toggle("Activar Modelo de Score Comercial", value=False)
+        
+        if usar_score:
+            mis_pesos = {
+                "INDICE_RIQUEZA": 0.40,
+                "P_60YMAS": 0.40,
+                "VPH_AUTOM": 0.20
+            }
+            fig_bar = BarChartGenerator(df).create_scoring_chart(
+                pesos=mis_pesos,
+                nivel=nivel,
+                titulo="Top 15 - Índice Comercial (Score)", 
+                modo_oscuro=modo_oscuro
+            )
+        else:
+            fig_bar = BarChartGenerator(df).create_chart(
+                metrica=metrica_col,
+                nivel=nivel,
+                titulo=f"Top 15 - {st.session_state.metrica}",
+                modo_oscuro=modo_oscuro
+            )
+            
         st.plotly_chart(fig_bar, width="stretch")
 
 
     with col2:
-        fig_map = ChoroplethMapGenerator(df, geojson).create_map(metrica_col,lat,lon,zoom_real,modo_oscuro)
+        df_map = df.copy()
+        
+        if usar_score:
+            df_map["SCORE"] = (
+                (df_map["INDICE_RIQUEZA"] / df_map["POBTOT"]) * 0.40 +
+                (df_map["P_60YMAS"] / df_map["POBTOT"]) * 0.40 +
+                (df_map["VPH_AUTOM"] / df_map["POBTOT"]) * 0.20
+            ) * 100
+            df_map["SCORE"] = df_map["SCORE"].fillna(0)
+            metrica_mapa = "SCORE"
+        else:
+            metrica_mapa = metrica_col
+            
+        fig_map = ChoroplethMapGenerator(df_map, geojson).create_map(metrica_mapa, lat, lon, zoom_real, modo_oscuro)
         st.plotly_chart(fig_map, width="stretch")
-
-
 
 def render_detail_view(df):
     """
