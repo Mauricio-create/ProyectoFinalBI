@@ -247,18 +247,7 @@ def render_dashboard_view(df, geojson, metrica_col, modo_oscuro):
 
     with col2:
         df_map = df.copy()
-        
-        if usar_score:
-            df_map["SCORE"] = (
-                (df_map["INDICE_RIQUEZA"] / df_map["POBTOT"]) * 0.40 +
-                (df_map["P_60YMAS"] / df_map["POBTOT"]) * 0.40 +
-                (df_map["VPH_AUTOM"] / df_map["POBTOT"]) * 0.20
-            ) * 100
-            df_map["SCORE"] = df_map["SCORE"].fillna(0)
-            metrica_mapa = "SCORE"
-        else:
-            metrica_mapa = metrica_col
-            
+        metrica_mapa = metrica_col    
         fig_map = ChoroplethMapGenerator(df_map, geojson).create_map(metrica_mapa, lat, lon, zoom_real, modo_oscuro)
         st.plotly_chart(fig_map, width="stretch")
 
