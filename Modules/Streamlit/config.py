@@ -220,7 +220,17 @@ def render_dashboard_view(df, geojson, metrica_col, modo_oscuro):
 
     with col1:
         nivel = "CP" if st.session_state.alcaldia != "Todas" else "NOM_MUN"
-        fig_bar = BarChartGenerator(df).create_chart(metrica_col,nivel,f"Top 15 - {st.session_state.metrica}", modo_oscuro)
+        mis_pesos = {
+            "INDICE_RIQUEZA": 0.40,
+            "P_60YMAS": 0.40,
+            "VPH_AUTOM": 0.20
+        }
+        fig_bar = BarChartGenerator(df).create_scoring_chart(
+            pesos=mis_pesos,
+            nivel=nivel,
+            titulo="Índice de Oportunidad Comercial (Score)", 
+            modo_oscuro=modo_oscuro
+        )
         st.plotly_chart(fig_bar, width="stretch")
 
 
