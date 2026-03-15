@@ -59,7 +59,7 @@ def main():
     * `CP`: Código Postal (normalizado como string de 5 dígitos).
     """
     init_session_state()
-    df_raw, geojson = load_all_data(BASE_DIR) # Cargamos los datos originales
+    df_raw, geojson = load_all_data(BASE_DIR) 
 
     show_header("Dashboard Inteligencia de Negocios CDMX")
     

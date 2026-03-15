@@ -42,7 +42,7 @@ class BarChartGenerator:
         fig = px.bar(
             df_res, x=nivel, y="Porcentaje (%)", color="Porcentaje (%)",
             template=tema, color_continuous_scale="Viridis", title=titulo,
-            labels={nivel: nombres_ejes.get(nivel, nivel)} # <-- Traducción del eje X
+            labels={nivel: nombres_ejes.get(nivel, nivel)} 
         )
         return fig
 
@@ -89,6 +89,6 @@ class BarChartGenerator:
         fig = px.bar(
             df_res, x=nivel, y="Score", color="Score",
             template=tema, color_continuous_scale="Plasma", title=titulo,
-            labels={nivel: nombres_ejes.get(nivel, nivel)} # <-- Traducción del eje X
+            labels={nivel: nombres_ejes.get(nivel, nivel)} 
         )
         return fig
